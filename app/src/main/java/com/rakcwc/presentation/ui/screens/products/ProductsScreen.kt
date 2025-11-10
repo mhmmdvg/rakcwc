@@ -62,13 +62,19 @@ fun ProductsScreen(
         when (productsState) {
             is Resource.Loading -> {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .width(120.dp)
-                            .height(32.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .shimmerEffect()
-                    )
+                            .height(120.dp),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(160.dp)
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .shimmerEffect()
+                        )
+                    }
                 }
 
                 items(8) {
@@ -82,12 +88,15 @@ fun ProductsScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .shimmerEffect()
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Column {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(16.dp)
+                                    .width(80.dp)
+                                    .height(32.dp)
                                     .padding(top = 8.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .shimmerEffect()
@@ -95,8 +104,8 @@ fun ProductsScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(14.dp)
+                                    .width(60.dp)
+                                    .height(24.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .shimmerEffect()
                             )

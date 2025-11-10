@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
+import com.composables.icons.lucide.X
 import com.rakcwc.data.remote.resources.Resource
 import com.rakcwc.presentation.ui.screens.products.components.EmptyProductView
 import com.rakcwc.presentation.ui.screens.products.components.ProductCard
@@ -37,7 +39,7 @@ fun SearchScreen(
     searchVm: SearchViewModel = hiltViewModel()
 ) {
     val searchState by searchVm.products.collectAsState()
-    var queryKey by remember { mutableStateOf("") }
+    val searchQuery = searchVm.searchQuery.value
     val lazyGridState = rememberLazyGridState()
     val totalScrollOffset = remember {
         derivedStateOf {
@@ -72,15 +74,28 @@ fun SearchScreen(
 
         item(span = { GridItemSpan(maxLineSpan) }) {
             OutlinedTextField(
-                value = queryKey,
-                onValueChange = remember { { queryKey = it } },
+                value = searchQuery.query,
+                onValueChange = { searchVm.onSearchQueryChanged(it) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Search products...") },
+                placeholder = { Text(text = "Search by name, code, or variant...") },
                 leadingIcon = {
                     Icon(
                         imageVector = Lucide.Search,
                         contentDescription = "Search",
                     )
+                },
+                trailingIcon = {
+                    if (searchQuery.query.isNotEmpty()) {
+                        IconButton(
+                            onClick = { searchVm.onSearchQueryChanged("") }
+                        ) {
+                            Icon(
+                                imageVector = Lucide.X,
+                                contentDescription = "Clear search",
+                                tint = Color.Gray
+                            )
+                        }
+                    }
                 },
                 textStyle = TextStyle(
                     color = Color.Black,
@@ -112,12 +127,15 @@ fun SearchScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .shimmerEffect()
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Column {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(16.dp)
+                                    .width(80.dp)
+                                    .height(32.dp)
                                     .padding(top = 8.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .shimmerEffect()
@@ -125,8 +143,8 @@ fun SearchScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(14.dp)
+                                    .width(60.dp)
+                                    .height(24.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .shimmerEffect()
                             )

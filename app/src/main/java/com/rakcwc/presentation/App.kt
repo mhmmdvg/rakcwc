@@ -1,6 +1,5 @@
 package com.rakcwc.presentation
 
-import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -8,14 +7,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,18 +19,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.rakcwc.data.remote.local.TokenManager
-import com.rakcwc.data.remote.resources.Resource
 import com.rakcwc.presentation.ui.components.AppBar
 import com.rakcwc.presentation.ui.components.BottomNavigation
 import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
-import com.rakcwc.presentation.ui.screens.authentication.AuthViewModel
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
 import com.rakcwc.presentation.ui.screens.products.ProductsScreen
 import com.rakcwc.presentation.ui.screens.products.ProductsViewModel
 import com.rakcwc.presentation.ui.screens.search.SearchScreen
 import com.rakcwc.presentation.ui.screens.search.SearchViewModel
+import com.rakcwc.presentation.ui.screens.settings.SettingScreen
 import com.rakcwc.presentation.ui.screens.splash.SplashScreen
 
 @Composable
@@ -93,7 +84,7 @@ fun App(
                 Screen.Setting.route -> {
                     AppBar(
                         title = "Setting",
-                        scrollOffset = scrollOffset,
+                        scrollOffset = 200,
                         maxOffset = maxOffset
                     )
                 }
@@ -278,6 +269,10 @@ fun App(
                         },
                         searchVm = searchViewModel
                     )
+                }
+
+                composable("setting") {
+                    SettingScreen()
                 }
             }
         }

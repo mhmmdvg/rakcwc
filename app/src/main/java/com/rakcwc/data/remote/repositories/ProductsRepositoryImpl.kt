@@ -75,4 +75,23 @@ class ProductsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun searchProducts(search: String): Flow<Result<HTTPResponse<ProductsResponse>>> = flow {
+        try {
+            val response = productsApi.searchProducts(search)
+
+            if (response.isSuccessful) {
+                val apiResponse = response.body()
+                if (apiResponse != null) {
+                    emit(Result.success(apiResponse))
+                } else {
+                    emit(Result.failure(Exception("Empty response body")))
+                }
+            } else {
+                emit(Result.failure(Exception("API Error: ${response.code()}")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
 }

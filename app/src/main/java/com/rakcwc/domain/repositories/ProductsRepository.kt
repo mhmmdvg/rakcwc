@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ProductsRepository {
     fun getProducts(): Flow<Result<HTTPResponse<ProductsResponse>>>
+    suspend fun searchProducts(search: String): Flow<Result<HTTPResponse<ProductsResponse>>>
 //    fun getProductDetail(id: String): Flow<Result<HTTPResponse<Products>>>
 //    suspend fun createProduct(request: Products): Result<HTTPResponse<Products>>
 }
