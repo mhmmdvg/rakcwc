@@ -1,28 +1,29 @@
 package com.rakcwc.presentation.ui.screens.settings.components
 
-import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rakcwc.domain.models.UserInfo
 import com.rakcwc.presentation.ui.components.CacheImage
+import com.rakcwc.presentation.ui.theme.AccentColor
+import com.rakcwc.utils.GetInitial
 
 @Composable
 fun ProfileSection(
     modifier: Modifier = Modifier,
+    onEditClick: () -> Unit = {},
+    data: UserInfo? = null,
 ) {
     Column(
         modifier = modifier,
@@ -38,72 +39,32 @@ fun ProfileSection(
             ) {
                 Column {
                     Text(
-                        text = "Muhammad Vikri",
+                        text = "${data?.firstName} ${data?.lastName}",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color.Black,
                     )
                     Text(
-                        text = "@mvigi",
+                        text = "@${data?.email?.split("@")[0]}",
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                                append("2 ")
-                            }
-                            withStyle(
-                                style = SpanStyle(
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            ) {
-                                append("followers")
-                            }
-                        },
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 14.sp,
-                    )
-
-                    Text(
-                        text = "•",
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 16.sp,
-                    )
-
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                                append("2 ")
-                            }
-                            withStyle(
-                                style = SpanStyle(
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            ) {
-                                append("following")
-                            }
-                        },
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 14.sp,
+                        color = Color.Black,
                     )
                 }
             }
 
-            CacheImage(
-                imageUrl = "https://github.com/evilrabbit.png",
+            Box(
                 modifier = Modifier
                     .size(82.dp)
-                    .clip(CircleShape)
-            )
+                    .background(Color.LightGray, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = GetInitial.usersInitial("${data?.firstName} ${data?.lastName}"),
+                    color = Color.Black,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         Row(
@@ -113,13 +74,14 @@ fun ProfileSection(
         ) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { Log.d("ProfileScreen", "Edit") },
+                onClick = onEditClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1DB954)
+                    containerColor = AccentColor
                 ),
             ) {
                 Text(
-                    text = "Edit"
+                    text = "Edit",
+                    color = Color.White,
                 )
             }
         }
