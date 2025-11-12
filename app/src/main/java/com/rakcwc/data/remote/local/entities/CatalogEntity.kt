@@ -12,12 +12,13 @@ data class CatalogEntity(
     val name: String,
     val description: String?,
     val imageUrl: String?,
+    val filters: List<String>? = null,
     val createdAt: String,
     val updatedAt: String,
     @ColumnInfo(name = "cached_at") val cachedAt: Long = System.currentTimeMillis(),
 )
 
-data class CatalogDetailEntity(
+data class CatalogWithProducts(
     @Embedded val catalog: CatalogEntity,
-    @Relation(parentColumn = "id", entityColumn = "catalogId") val variants: List<ProductEntity>
+    @Relation(parentColumn = "id", entityColumn = "catalogId") val products: List<ProductEntity>
 )

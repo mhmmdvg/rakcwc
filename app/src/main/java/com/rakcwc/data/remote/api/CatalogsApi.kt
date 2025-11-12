@@ -8,13 +8,19 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface CatalogsApi {
     @GET("catalogs")
     suspend fun getCatalogs(): Response<HTTPResponse<List<CatalogsResponse>>>
 
     @GET("catalogs/{id}")
-    suspend fun getCatalogDetail(@Path("id") id: String): Response<HTTPResponse<CatalogsResponse>>
+    suspend fun getCatalogDetail(
+        @Path("id") id: String,
+        @Query("filter") filter: String? = null,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 10,
+    ): Response<HTTPResponse<CatalogsResponse>>
 
     @POST("catalogs")
     suspend fun createCatalog(@Body request: CatalogRequest): Response<HTTPResponse<CatalogsResponse>>

@@ -14,13 +14,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.rakcwc.presentation.ui.screens.settings.components.ProfileSection
 import com.rakcwc.presentation.ui.screens.settings.components.SettingsMenuItem
 import com.rakcwc.presentation.ui.screens.settings.components.SettingsSectionHeader
 
 @Composable
 fun SettingScreen(
-    settingVm: SettingsViewModel = hiltViewModel()
+    settingVm: SettingsViewModel = hiltViewModel(),
+    navController: NavController,
 ) {
     val settingState by settingVm.settings.collectAsState()
 
@@ -42,12 +44,12 @@ fun SettingScreen(
             SettingsSectionHeader(title = "Settings")
             SettingsMenuItem(
                 title = "Catalog Management",
-                onClick = { /* Navigate to Account management */ }
+                onClick = { navController.navigate("setting/catalog-management") }
             )
 
             SettingsMenuItem(
                 title = "Product Management",
-                onClick = { /* Navigate to Profile visibility */ }
+                onClick = { navController.navigate("setting/product-management") }
             )
         }
 
@@ -65,10 +67,4 @@ fun SettingScreen(
         // Add bottom padding for scroll
         Column(modifier = Modifier.padding(bottom = 32.dp)) { }
     }
-}
-
-@Preview
-@Composable
-fun PreviewSettingScreen() {
-    SettingScreen()
 }

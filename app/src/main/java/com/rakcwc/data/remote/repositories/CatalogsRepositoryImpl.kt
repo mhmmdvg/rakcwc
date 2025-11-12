@@ -90,102 +90,83 @@ class CatalogsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getCatalogDetail(id: String): Flow<Result<HTTPResponse<CatalogsResponse>>> = flow {
-        val cachedCatalog = catalogDao.getCatalogById(id).first()
-        val cachedProducts = productsDao.getProductsByCatalogId(id).first()
+    override fun getCatalogDetail(
+        id: String,
+        filter: String?,
+        page: Int
+    ): Flow<Result<HTTPResponse<CatalogsResponse>>> = flow {
+        val hasFilter = filter != null && filter != "All"
+        val shouldUseCache = page == 1 && !hasFilter
 
-        val hasCompleteCache = cachedCatalog != null && cachedProducts.isNotEmpty()
-        val isCacheValid =
-            hasCompleteCache && (System.currentTimeMillis() - cachedCatalog.cachedAt) < _cacheValidityDuration
+        if (shouldUseCache) {
+            val catalogWithProducts = catalogDao.getCatalogWithProducts(id).first()
 
-        // Always emit cache first if it exists (valid or stale)
-        if (hasCompleteCache) {
-            val catalogWithProducts = cachedCatalog.toDomain().copy(
-                products = cachedProducts.map { it.toDomain() }
-            )
-            val cachedResponse = HTTPResponse(
-                status = true,
-                message = if (isCacheValid) "Cached data" else "Stale cached data",
-                data = catalogWithProducts
-            )
-            Log.d("CatalogsRepo", "Emitting ${if (isCacheValid) "valid" else "stale"} cache for catalog $id")
-            emit(Result.success(cachedResponse))
+            val hasCompleteCache = catalogWithProducts != null && catalogWithProducts.products.isNotEmpty()
+            val isCacheValid =
+                hasCompleteCache && (System.currentTimeMillis() - catalogWithProducts.catalog.cachedAt) < _cacheValidityDuration
 
-            // If cache is valid, don't fetch from API
-            if (isCacheValid) {
-                return@flow
+            // Always emit cache first if it exists (valid or stale)
+            if (hasCompleteCache) {
+                val cachedResponse = HTTPResponse(
+                    status = true,
+                    message = if (isCacheValid) "Cached data" else "Stale cached data",
+                    data = catalogWithProducts.toDomain()
+                )
+                Log.d("CatalogsRepo", "Emitting ${if (isCacheValid) "valid" else "stale"} cache for catalog $id")
+                emit(Result.success(cachedResponse))
+
+                // If cache is valid, don't fetch from API
+                if (isCacheValid) {
+                    return@flow
+                }
+                // If cache is stale, continue to fetch fresh data below
             }
-            // If cache is stale, continue to fetch fresh data below
         }
 
         // Fetch from API (only if no cache OR cache is stale)
         try {
-            val response = catalogsApi.getCatalogDetail(id)
+            val response = catalogsApi.getCatalogDetail(
+                id = id,
+                filter = if (hasFilter) filter else null,
+                page = page
+            )
 
             if (!response.isSuccessful) {
                 val errorMessage = "API Error: ${response.code()} - ${response.message()}"
-
-                // If we already emitted stale cache above, don't emit error
-                if (!hasCompleteCache) {
-                    emit(Result.failure(Exception(errorMessage)))
-                } else {
-                    Log.d("CatalogsRepo", "API failed but stale cache already emitted for catalog $id")
-                }
+                emit(Result.failure(Exception(errorMessage)))
                 return@flow
             }
 
             val body = response.body()
-            if (body == null) {
+            Log.d("CatalogsRepo", "${body?.data?.filters}")
+            if (body?.data == null) {
                 Log.e("CatalogsRepo", "Response body is null")
-                if (!hasCompleteCache) {
-                    emit(Result.failure(Exception("Response body is null")))
-                }
+                emit(Result.failure(Exception("Response body is null")))
                 return@flow
             }
 
             val catalog = body.data
-            if (catalog == null) {
-                Log.e("CatalogsRepo", "Catalog data is null")
-                if (!hasCompleteCache) {
-                    emit(Result.failure(Exception("Catalog data is null")))
+            if (page == 1 && !hasFilter) {
+                // Save fresh data to cache
+                val catalogEntity = catalog.toEntity().copy(
+                    cachedAt = System.currentTimeMillis()
+                )
+                catalogDao.insertCatalog(catalogEntity)
+
+                productsDao.deleteProductsByCatalogId(id)
+                catalog.products?.let { products ->
+                    if (products.isNotEmpty()) {
+                        productsDao.insertProducts(products.map { it.toEntity() })
+                    }
                 }
-                return@flow
+                Log.d("CatalogsRepo", "Cache updated for catalog $id")
             }
 
-            // Save fresh data to cache
-            val catalogEntity = catalog.toEntity().copy(
-                cachedAt = System.currentTimeMillis()
-            )
-            catalogDao.insertCatalog(catalogEntity)
-
-            productsDao.deleteProductsByCatalogId(id)
-            catalog.products?.let { products ->
-                if (products.isNotEmpty()) {
-                    productsDao.insertProducts(products.map { it.toEntity() })
-                }
-            }
-
-            val savedProducts = productsDao.getProductsByCatalogId(id).first()
-            val catalogWithProducts = catalog.copy(
-                products = savedProducts.map { it.toDomain() }
-            )
-            val responseWithProducts = body.copy(
-                data = catalogWithProducts,
-                message = "Fresh data"
-            )
-
-            Log.d("CatalogsRepo", "Emitting fresh data for catalog $id")
-            emit(Result.success(responseWithProducts))
-
+            Log.d("CatalogsRepo", "Emitting API data (page: $page, filter: ${filter ?: "none"})")
+            emit(Result.success(body))
         } catch (error: Exception) {
             Log.e("CatalogsRepo", "API Error: ${error.message}", error)
-
-            // Only emit error if we haven't emitted cache
-            if (!hasCompleteCache) {
-                emit(Result.failure(error))
-            } else {
-                Log.d("CatalogsRepo", "Exception occurred but stale cache already emitted for catalog $id")
-            }
+            emit(Result.failure(error))
         }
     }
 

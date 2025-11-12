@@ -25,6 +25,7 @@ import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
+import com.rakcwc.presentation.ui.screens.management.ManagementScreen
 import com.rakcwc.presentation.ui.screens.products.ProductsScreen
 import com.rakcwc.presentation.ui.screens.products.ProductsViewModel
 import com.rakcwc.presentation.ui.screens.search.SearchScreen
@@ -40,6 +41,7 @@ fun App(
     val navController = rememberNavController()
     var scrollOffset by remember { mutableIntStateOf(0) }
     var productsScreenTitle by remember { mutableStateOf("") }
+    var managementTitle by remember { mutableStateOf("") }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
@@ -76,8 +78,9 @@ fun App(
                 Screen.CatalogDetail.route -> {
                     AppBar(
                         title = productsScreenTitle,
-                        scrollOffset = scrollOffset,
-                        maxOffset = maxOffset
+                        scrollOffset = 200,
+                        maxOffset = maxOffset,
+                        onBackPressed = { navController.popBackStack() }
                     )
                 }
 
@@ -86,6 +89,15 @@ fun App(
                         title = "Setting",
                         scrollOffset = 200,
                         maxOffset = maxOffset
+                    )
+                }
+
+                Screen.SettingManagement.route -> {
+                    AppBar(
+                        title = managementTitle,
+                        scrollOffset = 200,
+                        maxOffset = maxOffset,
+                        onBackPressed = { navController.popBackStack() }
                     )
                 }
             }
@@ -237,12 +249,6 @@ fun App(
                         },
                         navigationTitle = { title ->
                             productsScreenTitle = title
-                            NavigationTitle(
-                                title = title,
-                                navController = navController,
-                                scrollOffset = scrollOffset,
-                                maxOffset = maxOffset,
-                            )
                         },
                         catalogId = id,
                         productVm = productsViewModel
@@ -272,7 +278,21 @@ fun App(
                 }
 
                 composable("setting") {
-                    SettingScreen()
+                    SettingScreen(
+                        navController = navController,
+                    )
+                }
+
+                composable(
+                    route = Screen.SettingManagement.route,
+                    arguments = listOf(navArgument("management") { type = NavType.StringType })
+                ) {
+                    val management = it.arguments?.getString("management") ?: ""
+                    ManagementScreen(
+                        route = management,
+                    ) {
+                        managementTitle = it
+                    }
                 }
             }
         }

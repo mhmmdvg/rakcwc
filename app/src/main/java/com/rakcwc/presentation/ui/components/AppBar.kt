@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
 import kotlin.math.max
 import kotlin.math.min
@@ -97,7 +97,7 @@ fun AppBar(
                         .padding(4.dp)
                 ) {
                     Icon(
-                        imageVector = Lucide.ArrowLeft,
+                        imageVector = Lucide.ChevronLeft,
                         contentDescription = "Back",
                         modifier = Modifier
                             .size(20.dp)

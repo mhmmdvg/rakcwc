@@ -8,6 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface CatalogsRepository {
     fun getCatalogs(): Flow<Result<HTTPResponse<List<CatalogsResponse>>>>
-    fun getCatalogDetail(id: String): Flow<Result<HTTPResponse<CatalogsResponse>>>
+    fun getCatalogDetail(id: String, filter: String? = null, page: Int = 1): Flow<Result<HTTPResponse<CatalogsResponse>>>
     suspend fun createCatalog(request: CatalogRequest): Result<HTTPResponse<CatalogsResponse>>
 }
