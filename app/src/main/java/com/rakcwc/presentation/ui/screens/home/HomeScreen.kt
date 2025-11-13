@@ -16,11 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.rakcwc.data.remote.resources.Resource
+import com.rakcwc.presentation.ui.components.EmptyState
+import com.rakcwc.presentation.ui.components.ErrorState
 import com.rakcwc.presentation.ui.screens.home.components.CatalogCard
 import com.rakcwc.presentation.ui.screens.home.components.EmptyCatalogView
 import com.rakcwc.utils.shimmerEffect
@@ -33,8 +36,31 @@ fun HomeScreen(
     homeVm: HomeViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
-
     val homeState by homeVm.catalogs.collectAsState()
+
+    // Get screen configuration for responsive design
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    // Calculate responsive values
+    val columnsPerRow = when {
+        screenWidth < 600.dp -> 2  // Phone portrait
+        screenWidth < 840.dp -> 3  // Phone landscape / Small tablet
+        screenWidth < 1200.dp -> 4 // Tablet
+        else -> 5                   // Large tablet / Desktop
+    }
+
+    val horizontalPadding = when {
+        screenWidth < 600.dp -> 16.dp
+        screenWidth < 840.dp -> 24.dp
+        else -> 32.dp
+    }
+
+    val cardSpacing = when {
+        screenWidth < 600.dp -> 12.dp
+        screenWidth < 840.dp -> 16.dp
+        else -> 20.dp
+    }
 
     LaunchedEffect(scrollState.value) {
         onScrollOffsetChanged(scrollState.value)
@@ -43,16 +69,14 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                color = Color.White,
-            )
+            .background(color = Color.White)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.Start
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = horizontalPadding)
         ) {
             navigationTitle()
         }
@@ -61,7 +85,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = horizontalPadding)
         ) {
             Text(
                 modifier = Modifier.padding(bottom = 16.dp),
@@ -71,24 +95,28 @@ fun HomeScreen(
                 color = Color.Black
             )
 
-
             when (homeState) {
                 is Resource.Loading -> {
-                    (1..4).chunked(2).forEach { rowItems ->
+                    // Show shimmer loading based on columns per row
+                    (1..8).chunked(columnsPerRow).forEach { rowItems ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                .padding(bottom = cardSpacing),
+                            horizontalArrangement = Arrangement.spacedBy(cardSpacing)
                         ) {
                             rowItems.forEach { _ ->
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(120.dp)
+                                        .aspectRatio(1f)
                                         .clip(RoundedCornerShape(16.dp))
                                         .shimmerEffect()
                                 )
+                            }
+                            // Fill remaining space if row is incomplete
+                            repeat(columnsPerRow - rowItems.size) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
@@ -98,42 +126,44 @@ fun HomeScreen(
                     val catalogs = homeState.data?.data ?: emptyList()
 
                     if (catalogs.isNotEmpty()) {
-                        catalogs.chunked(2).forEach { catalog ->
+                        catalogs.chunked(columnsPerRow).forEach { catalogRow ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    .padding(bottom = cardSpacing),
+                                horizontalArrangement = Arrangement.spacedBy(cardSpacing)
                             ) {
-                                catalog.forEach { item ->
+                                catalogRow.forEach { item ->
                                     CatalogCard(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(120.dp),
+                                        modifier = Modifier.weight(1f),
                                         data = item
                                     ) {
                                         navController?.navigate("catalog/${item.id}")
                                     }
+                                }
 
-                                    if (catalog.size == 1) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
+                                // Fill remaining space if row is incomplete
+                                repeat(columnsPerRow - catalogRow.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
                                 }
                             }
                         }
                     } else {
-                        EmptyCatalogView(
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        EmptyState()
                     }
                 }
 
                 is Resource.Error -> {
-
+                    ErrorState(
+                        errorMessage = "Oops! Something Went Wrong",
+                        errorDescription = homeState.message
+                            ?: "We couldn't load the data. Please check your connection and try again.",
+                        onRetryClick = {
+                            homeVm.getCatalogs()
+                        }
+                    )
                 }
             }
-
         }
     }
 }
-

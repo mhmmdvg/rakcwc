@@ -8,7 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +43,8 @@ fun CatalogCard(
 
     Box(
         modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f) // Instagram-style square (1:1 ratio)
             .background(
                 color = Color.Transparent,
                 shape = RoundedCornerShape(16.dp)
@@ -56,7 +59,8 @@ fun CatalogCard(
     ) {
         CacheImage(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .clip(RoundedCornerShape(16.dp)),
             imageUrl = data.imageUrl ?: "",
             description = data.name,

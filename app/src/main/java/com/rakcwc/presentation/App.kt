@@ -6,10 +6,16 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,11 +24,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
 import com.rakcwc.data.remote.local.TokenManager
 import com.rakcwc.presentation.ui.components.AppBar
 import com.rakcwc.presentation.ui.components.BottomNavigation
 import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
+import com.rakcwc.presentation.ui.screens.createcatalog.CreateCatalogScreen
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
 import com.rakcwc.presentation.ui.screens.management.ManagementScreen
@@ -31,12 +40,10 @@ import com.rakcwc.presentation.ui.screens.products.ProductsViewModel
 import com.rakcwc.presentation.ui.screens.search.SearchScreen
 import com.rakcwc.presentation.ui.screens.search.SearchViewModel
 import com.rakcwc.presentation.ui.screens.settings.SettingScreen
-import com.rakcwc.presentation.ui.screens.splash.SplashScreen
 
 @Composable
 fun App(
-    tokenManager: TokenManager,
-    startDestination: String,
+    tokenManager: TokenManager
 ) {
     val navController = rememberNavController()
     var scrollOffset by remember { mutableIntStateOf(0) }
@@ -49,9 +56,24 @@ fun App(
     val maxOffset = 200
 
     val shouldBottomNav = when (currentRoute) {
-        Screen.Authentication.route, Screen.Splash.route -> false
+        Screen.Authentication.route, Screen.CreateCatalog.route -> false
         null -> false
         else -> !currentRoute.startsWith(Screen.Home.route + "/")
+    }
+
+    val isAuthenticated = if (tokenManager.getToken().isNullOrEmpty()) false else true
+    val startDestination = if (isAuthenticated) Screen.BottomNav.route else Screen.Authentication.route
+
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated && currentRoute == Screen.Authentication.route) {
+            navController.navigate(Screen.BottomNav.route) {
+                popUpTo(Screen.Authentication.route) { inclusive = true }
+            }
+        } else if (!isAuthenticated && currentRoute == Screen.BottomNav.route) {
+            navController.navigate(Screen.Authentication.route) {
+                popUpTo(0)
+            }
+        }
     }
 
     Scaffold(
@@ -97,6 +119,27 @@ fun App(
                         title = managementTitle,
                         scrollOffset = 200,
                         maxOffset = maxOffset,
+                        onBackPressed = { navController.popBackStack() },
+                        actions = {
+                            IconButton(
+                                onClick = { navController.navigate(Screen.CreateCatalog.route) }
+                            ) {
+                                Icon(
+                                    imageVector = Lucide.Plus,
+                                    contentDescription = "Add",
+                                    modifier = Modifier
+                                        .size(24.dp),
+                                    tint = Color.Black
+                                )
+                            }
+                        }
+                    )
+                }
+
+                Screen.CreateCatalog.route -> {
+                    AppBar(
+                        title = "Create Catalog",
+                        scrollOffset = 200,
                         onBackPressed = { navController.popBackStack() }
                     )
                 }
@@ -193,12 +236,6 @@ fun App(
                 )
             }
         ) {
-            composable("splash") {
-                SplashScreen(
-                    tokenManager = tokenManager,
-                    navController = navController
-                )
-            }
 
             composable("authentication") {
                 AuthScreen(
@@ -283,17 +320,27 @@ fun App(
                     )
                 }
 
-                composable(
-                    route = Screen.SettingManagement.route,
-                    arguments = listOf(navArgument("management") { type = NavType.StringType })
-                ) {
-                    val management = it.arguments?.getString("management") ?: ""
-                    ManagementScreen(
-                        route = management,
-                    ) {
+            }
+
+            composable(
+                route = Screen.SettingManagement.route,
+                arguments = listOf(navArgument("management") { type = NavType.StringType })
+            ) {
+                val management = it.arguments?.getString("management") ?: ""
+                ManagementScreen(
+                    route = management,
+                    navigationTitle = {
                         managementTitle = it
                     }
-                }
+                )
+            }
+
+            composable(
+                route = Screen.CreateCatalog.route
+            ) {
+                CreateCatalogScreen(
+                    navController = navController,
+                )
             }
         }
     }

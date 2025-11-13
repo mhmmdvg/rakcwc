@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rakcwc.domain.models.Products
@@ -45,7 +46,7 @@ fun ProductCard(
 
     Box(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .background(Color.Transparent)
             .scale(scale)
             .clickable(
@@ -54,16 +55,16 @@ fun ProductCard(
             ) { onClick() }
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxWidth(),
         ) {
+            // Square image like Instagram feed (1:1 aspect ratio)
             CacheImage(
                 imageUrl = data.imageUrl ?: "",
                 modifier = Modifier
-                    .fillMaxSize()
-                    .height(160.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
                     .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.FillBounds
+                contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(8.dp))
             Column(
@@ -73,11 +74,26 @@ fun ProductCard(
                     text = data.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(text = data.code, fontSize = 14.sp, color = Color.Gray)
+                Text(
+                    text = data.code,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-            Text(text = data.price.toString(), fontSize = 16.sp, color = AccentColor, fontWeight = FontWeight.Bold)
+            Text(
+                text = data.price.toString(),
+                fontSize = 16.sp,
+                color = AccentColor,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

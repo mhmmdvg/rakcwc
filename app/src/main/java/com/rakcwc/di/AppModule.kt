@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.rakcwc.data.remote.api.AuthenticationApi
 import com.rakcwc.data.remote.api.CatalogsApi
+import com.rakcwc.data.remote.api.ImageApi
 import com.rakcwc.data.remote.api.ProductsApi
 import com.rakcwc.data.remote.local.TokenManager
 import com.rakcwc.data.remote.repositories.AuthenticationRepositoryImpl
@@ -96,6 +97,12 @@ object AppModule {
     @Singleton
     fun provideProductsApi(retrofit: Retrofit): ProductsApi {
         return retrofit.create(ProductsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageApi(retrofit: Retrofit): ImageApi {
+        return retrofit.create(ImageApi::class.java)
     }
 
 }

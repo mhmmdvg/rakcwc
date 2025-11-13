@@ -16,6 +16,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.rakcwc.presentation.ui.components.EmptyState
+import com.rakcwc.presentation.ui.components.ErrorState
 import com.rakcwc.presentation.ui.components.FilterChip
 import com.rakcwc.presentation.ui.screens.products.components.EmptyProductView
 import com.rakcwc.presentation.ui.screens.products.components.ProductCard
@@ -26,6 +29,7 @@ fun ProductsScreen(
     onScrollOffsetChanged: (Int) -> Unit = {},
     navigationTitle: (String) -> Unit = {},
     catalogId: String? = null,
+    navController: NavController? = null,
     productVm: ProductsViewModel = hiltViewModel()
 ) {
     val uiState by productVm.uiState.collectAsState()
@@ -202,7 +206,9 @@ fun ProductsScreen(
                 uiState.products.isEmpty() && !uiState.isLoading -> {
                     // Empty state
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyProductView()
+                        EmptyState() {
+                            navController?.navigate("settings/product-management")
+                        }
                     }
                 }
             }
@@ -210,6 +216,14 @@ fun ProductsScreen(
             // Error state
             if (uiState.error != null && uiState.products.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
+                    ErrorState(
+                        errorMessage = "Oops! Something Went Wrong",
+                        errorDescription = uiState.error
+                            ?: "We couldn't load the data. Please check your connection and try again.",
+                    ) {
+                        productVm.retry()
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.RAKCWC" parent="android:Theme.Material.Light.NoActionBar"/>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Splash screen background color (AccentColor) -->
+        <item name="windowSplashScreenBackground">#DC1F35</item>
+
+        <!-- Splash screen icon -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_mayora_text</item>
+
+        <!-- Icon background (optional, remove if you want transparent) -->
+        <item name="windowSplashScreenIconBackgroundColor">#DC1F35</item>
+
+        <!-- Animation duration -->
+        <item name="windowSplashScreenAnimationDuration">300</item>
+
+        <!-- Post splash screen theme -->
+        <item name="postSplashScreenTheme">@style/Theme.RAKCWC</item>
+    </style>
 </resources>

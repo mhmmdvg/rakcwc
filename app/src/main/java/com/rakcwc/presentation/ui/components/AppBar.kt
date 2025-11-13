@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +39,7 @@ fun AppBar(
     modifier: Modifier = Modifier,
     title: String,
     onBackPressed: (() -> Unit)? = null,
+    actions: @Composable (() -> Unit)? = null,
     scrollOffset: Int = 0,
     maxOffset: Int = 200
 ) {
@@ -56,8 +58,10 @@ fun AppBar(
         label = "smallTitleAlpha"
     )
 
-    TopAppBar(
+    Box(
         modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
             .height(64.dp)
             .alpha(smallTitleAlpha)
             .background(
@@ -72,43 +76,61 @@ fun AppBar(
                     endY = Float.POSITIVE_INFINITY
                 )
             )
-            .zIndex(1f),
-        title = {
+            .zIndex(1f)
+    ) {
+        // Centered title
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = title,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                color = Color.Black,
+                letterSpacing = (-0.3).sp
+            )
+        }
+
+        // Back button on the left
+        onBackPressed?.let {
             Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
-                Text(
-                    text = title,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                    color = Color.Black,
-                    letterSpacing = (-0.3).sp
-                )
-            }
-        },
-        navigationIcon = {
-            onBackPressed?.let {
                 IconButton(
                     onClick = it,
                     modifier = Modifier
                         .size(44.dp)
-                        .padding(4.dp)
+                        .padding(start = 4.dp)
                 ) {
                     Icon(
                         imageVector = Lucide.ChevronLeft,
                         contentDescription = "Back",
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(24.dp)
                             .alpha(smallTitleAlpha * 0.8f + 0.2f),
                         tint = Color.Black
                     )
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-        )
-    )
+        }
+
+        // Trailing actions on the right
+        actions?.let {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                it()
+            }
+        }
+    }
 }

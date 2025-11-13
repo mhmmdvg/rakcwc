@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,6 +29,8 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.X
 import com.rakcwc.data.remote.resources.Resource
+import com.rakcwc.presentation.ui.components.EmptyState
+import com.rakcwc.presentation.ui.components.ErrorState
 import com.rakcwc.presentation.ui.screens.products.components.EmptyProductView
 import com.rakcwc.presentation.ui.screens.products.components.ProductCard
 import com.rakcwc.utils.shimmerEffect
@@ -41,6 +44,31 @@ fun SearchScreen(
     val searchState by searchVm.products.collectAsState()
     val searchQuery = searchVm.searchQuery.value
     val lazyGridState = rememberLazyGridState()
+
+    // Get screen configuration for responsive design
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    // Calculate responsive values
+    val columns = when {
+        screenWidth < 600.dp -> 2  // Phone portrait
+        screenWidth < 840.dp -> 3  // Phone landscape / Small tablet
+        screenWidth < 1200.dp -> 4 // Tablet
+        else -> 5                   // Large tablet / Desktop
+    }
+
+    val horizontalPadding = when {
+        screenWidth < 600.dp -> 16.dp
+        screenWidth < 840.dp -> 24.dp
+        else -> 32.dp
+    }
+
+    val gridSpacing = when {
+        screenWidth < 600.dp -> 12.dp
+        screenWidth < 840.dp -> 16.dp
+        else -> 20.dp
+    }
+
     val totalScrollOffset = remember {
         derivedStateOf {
             val firstVisibleItem = lazyGridState.layoutInfo.visibleItemsInfo.firstOrNull()
@@ -58,14 +86,14 @@ fun SearchScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(columns),
         state = lazyGridState,
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = horizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+        verticalArrangement = Arrangement.spacedBy(gridSpacing),
     ) {
 
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -110,20 +138,20 @@ fun SearchScreen(
                     errorContainerColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             )
         }
 
         when(searchState) {
             is Resource.Loading -> {
-                items(8) {
+                items(columns * 4) { // Show more shimmer items on larger screens
                     Column(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .height(120.dp)
+                                .fillMaxWidth()
+                                .aspectRatio(1f) // Maintain aspect ratio
                                 .clip(RoundedCornerShape(16.dp))
                                 .shimmerEffect()
                         )
@@ -134,7 +162,7 @@ fun SearchScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .width(80.dp)
+                                    .fillMaxWidth(0.6f)
                                     .height(32.dp)
                                     .padding(top = 8.dp)
                                     .clip(RoundedCornerShape(14.dp))
@@ -143,7 +171,7 @@ fun SearchScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .width(60.dp)
+                                    .fillMaxWidth(0.4f)
                                     .height(24.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .shimmerEffect()
@@ -168,14 +196,14 @@ fun SearchScreen(
                     }
                 } else {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyProductView()
+                        EmptyState()
                     }
                 }
             }
 
             is Resource.Error -> {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyProductView()
+                    ErrorState {}
                 }
             }
         }

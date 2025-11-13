@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.rakcwc.data.remote.local.TokenManager
 import com.rakcwc.presentation.ui.theme.RAKCWCTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
     lateinit var tokenManager: TokenManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
@@ -31,8 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RAKCWCTheme {
                 App(
-                    tokenManager = tokenManager,
-                    startDestination = Screen.Splash.route
+                    tokenManager = tokenManager
                 )
             }
         }
