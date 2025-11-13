@@ -79,14 +79,14 @@ class ProductsViewModel @Inject constructor(
 
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
-            loadPage(id, page = 1, filter = null)
+            loadPage(id, page = 1, filter = "All")
         }
     }
 
     /**
      * Apply or remove filter (resets to page 1)
      */
-    fun applyFilter(filterName: String?) {
+    fun applyFilter(filterName: String) {
         val catalogId = currentCatalogId ?: return
 
         // If same filter, do nothing
@@ -161,7 +161,7 @@ class ProductsViewModel @Inject constructor(
     private suspend fun loadPage(
         id: String,
         page: Int,
-        filter: String? = null,
+        filter: String = "All",
         isLoadingMore: Boolean = false
     ) {
         try {
@@ -285,7 +285,7 @@ class ProductsViewModel @Inject constructor(
      */
     private fun updateUiStateFromResponse(
         response: HTTPResponse<CatalogsResponse>,
-        filter: String? = null
+        filter: String = "All"
     ) {
         val catalog = response.data ?: return
 

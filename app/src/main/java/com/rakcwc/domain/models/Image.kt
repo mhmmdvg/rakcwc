@@ -6,3 +6,6 @@ import kotlinx.serialization.Serializable
 data class ImageUploadResponse(
     val imageUrl: String,
 )
+
+@Serializable
+data class ImageDeleteRequest(val imageUrl: String)

@@ -8,7 +8,7 @@ data class ProductsUiState(
     val products: List<Products> = emptyList(),
     val filters: List<FilterItem> = emptyList(),
     val catalogName: String = "",
-    val selectedFilter: String? = null,
+    val selectedFilter: String = "All",
     val currentPage: Int = 1,
     val hasNextPage: Boolean = false,
     val isLoading: Boolean = false,

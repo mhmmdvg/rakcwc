@@ -3,6 +3,7 @@ package com.rakcwc.presentation.ui.screens.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -32,16 +33,23 @@ fun SettingScreen(
             .background(Color.White)
             .verticalScroll(rememberScrollState())
             .padding(top = 86.dp)
-            .padding(horizontal = 20.dp)
     ) {
         // Profile Section
         ProfileSection(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
             data = settingState
         )
 
         // Settings Menu Items
         Column(modifier = Modifier.padding(top = 16.dp)) {
-            SettingsSectionHeader(title = "Settings")
+            SettingsSectionHeader(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                title = "Settings"
+            )
             SettingsMenuItem(
                 title = "Catalog Management",
                 onClick = { navController.navigate("setting/catalog-management") }
@@ -54,12 +62,17 @@ fun SettingScreen(
         }
 
         // Login Section
-        SettingsSectionHeader(title = "Login")
+        SettingsSectionHeader(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            title = "Login"
+        )
 
         Column {
             SettingsMenuItem(
                 title = "Log out",
-                onClick = { /* Navigate to Security */ },
+                onClick = { settingVm.signOut() },
                 showDivider = false
             )
         }

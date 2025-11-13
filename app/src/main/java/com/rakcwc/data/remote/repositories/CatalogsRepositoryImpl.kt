@@ -179,7 +179,9 @@ class CatalogsRepositoryImpl @Inject constructor(
                 val newCatalog = body.data
 
                 if (newCatalog != null) {
-                    catalogDao.insertCatalog(newCatalog.toEntity())
+                    catalogDao.insertCatalog(newCatalog.toEntity().copy(
+                        cachedAt = System.currentTimeMillis()
+                    ))
                 }
 
                 Log.d("CatalogsRepo", "Catalog created and cache updated")
@@ -196,5 +198,15 @@ class CatalogsRepositoryImpl @Inject constructor(
         } catch (error: Exception) {
             Result.failure(error)
         }
+    }
+
+    suspend fun insertOptimisticCatalog(catalog: CatalogsResponse) {
+        catalogDao.insertCatalog(catalog.toEntity().copy(
+            cachedAt = System.currentTimeMillis()
+        ))
+    }
+
+    suspend fun removeOptimisticCatalog(catalogId: String) {
+        catalogDao.deleteCatalogById(catalogId)
     }
 }

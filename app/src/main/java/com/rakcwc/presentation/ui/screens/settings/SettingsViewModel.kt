@@ -25,4 +25,8 @@ class SettingsViewModel @Inject constructor(
     private fun getProfile() {
         _settings.value = tokenManager.getToken()?.let { JWTDecoder.decode(it) }
     }
+
+    fun signOut() {
+        tokenManager.clearToken()
+    }
 }

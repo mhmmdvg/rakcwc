@@ -68,7 +68,6 @@ fun CreateCatalogScreen(
         )
     }
 
-    Log.d("CreateCatalogScreen", "${createState.data}")
 
     Column(
         modifier = Modifier

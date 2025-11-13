@@ -2,6 +2,7 @@ package com.rakcwc.presentation.ui.screens.createcatalog
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rakcwc.data.remote.repositories.CatalogsRepositoryImpl
@@ -10,6 +11,7 @@ import com.rakcwc.data.remote.resources.Resource
 import com.rakcwc.domain.models.CatalogRequest
 import com.rakcwc.domain.models.CatalogsResponse
 import com.rakcwc.domain.models.HTTPResponse
+import com.rakcwc.domain.models.ImageDeleteRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -22,6 +24,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -68,10 +71,15 @@ class CreateCatalogViewModel @Inject constructor(
 
     fun onImageSelected(uri: Uri) {
         viewModelScope.launch {
+            val existingImageUrl = _state.value.imageUrl
+
+            if (existingImageUrl != null) {
+                deleteImage(existingImageUrl)
+            }
+
             uploadImage(uri)
         }
     }
-
     private suspend fun uploadImage(uri: Uri) {
         _state.update {
             it.copy(
@@ -137,6 +145,50 @@ class CreateCatalogViewModel @Inject constructor(
         }
     }
 
+    private suspend fun deleteImage(imageUrl: String) {
+        _state.update {
+            it.copy(
+                uploadState = Resource.Loading(),
+                uploadProgress = 0f,
+                imageError = null
+            )
+        }
+
+        try {
+            val result = imageRepository.deleteImage(ImageDeleteRequest(imageUrl))
+
+            result.fold(
+                onSuccess = { response ->
+                    _state.update {
+                        it.copy(
+                            imageUrl = null,
+                            uploadState = Resource.Success(null),
+                            uploadProgress = 0f,
+                            imageError = null
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            uploadState = Resource.Error(error.message ?: "Failed to delete image"),
+                            uploadProgress = 0f,
+                            imageError = error.message ?: "Failed to delete image"
+                        )
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(
+                    uploadState = Resource.Error(e.message ?: "Failed to delete image"),
+                    uploadProgress = 0f,
+                    imageError = e.message ?: "Failed to delete image"
+                )
+            }
+        }
+    }
+
     private suspend fun simulateUploadProgress() {
         for (i in 1..10) {
             delay(100)
@@ -162,6 +214,21 @@ class CreateCatalogViewModel @Inject constructor(
         if (!validateForm()) return
 
         viewModelScope.launch {
+            val tempId = "temp_${UUID.randomUUID()}"
+
+            val optimisticCatalog = CatalogsResponse(
+                id = tempId,
+                name = _state.value.name,
+                description = _state.value.description.ifBlank { "" },
+                imageUrl = _state.value.imageUrl,
+                products = emptyList(),
+                filters = emptyList(),
+                createdAt = System.currentTimeMillis().toString(),
+                updatedAt = System.currentTimeMillis().toString(),
+            )
+
+            catalogsRepository.insertOptimisticCatalog(optimisticCatalog)
+
             _createState.value = Resource.Loading()
 
             try {
@@ -175,15 +242,18 @@ class CreateCatalogViewModel @Inject constructor(
 
                 result.fold(
                     onSuccess = { response ->
+                        catalogsRepository.removeOptimisticCatalog(tempId)
                         _createState.value = Resource.Success(response)
                     },
                     onFailure = { error ->
+                        catalogsRepository.removeOptimisticCatalog(tempId)
                         _createState.value = Resource.Error(
                             error.message ?: "Failed to create catalog"
                         )
                     }
                 )
             } catch (e: Exception) {
+                catalogsRepository.removeOptimisticCatalog(tempId)
                 _createState.value = Resource.Error(
                     e.message ?: "An unexpected error occurred"
                 )

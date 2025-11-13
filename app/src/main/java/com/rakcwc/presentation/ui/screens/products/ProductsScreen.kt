@@ -142,17 +142,13 @@ fun ProductsScreen(
                                     items = uiState.filters,
                                     key = { it.name }
                                 ) { filter ->
+                                    Log.d("ProductsScreen", "Filter $filter")
+                                    Log.d("ProductsScreen", "Selected ${uiState.selectedFilter}")
                                     FilterChip(
                                         label = "${filter.name}",
                                         isSelected = uiState.selectedFilter == filter.name,
                                         onClick = {
-                                            val newFilter = if (uiState.selectedFilter == filter.name) {
-                                                null
-                                            } else {
-                                                filter.name
-                                            }
-                                            Log.d("ProductsScreen", "Filter changed to: $newFilter")
-                                            productVm.applyFilter(newFilter)
+                                            productVm.applyFilter(filter.name)
                                         },
                                     )
                                 }

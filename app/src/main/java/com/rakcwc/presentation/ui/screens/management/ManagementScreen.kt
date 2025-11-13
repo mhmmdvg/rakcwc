@@ -47,6 +47,12 @@ fun ManagementScreen(
         managementVm.getManagementData(route)
     }
 
+    LaunchedEffect(Unit) {
+        if ("catalog" in route) {
+            managementVm.refreshData()
+        }
+    }
+
     Log.d("ManagementScreen", "ManagementScreen: ${managementState.data}")
 
     Box(

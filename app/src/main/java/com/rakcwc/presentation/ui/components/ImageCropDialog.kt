@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import com.rakcwc.presentation.ui.theme.AccentColor
@@ -81,7 +82,8 @@ fun ImageCropDialog(
             ) {
                 // Header with better contrast
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .zIndex(1f),
                     color = Color.Black.copy(alpha = 0.8f),
                     shadowElevation = 4.dp
                 ) {
