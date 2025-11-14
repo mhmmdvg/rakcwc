@@ -28,6 +28,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun getCatalogs() {
+        // Skip if already loaded successfully (prevents unnecessary reloads)
         if (_catalogs.value is Resource.Success) {
             return
         }
@@ -57,9 +58,44 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Force refresh catalogs (for pull-to-refresh)
+     * This bypasses the success check and always fetches fresh data
+     */
+    fun refreshCatalogs() {
+        Log.d("HomeViewModel", "Refreshing catalogs...")
+
+        fetchJob?.cancel()
+
+        fetchJob = viewModelScope.launch {
+            try {
+                catalogsRepository.getCatalogs().collect { result ->
+                    result.fold(
+                        onSuccess = {
+                            Log.d("HomeViewModel", "Refresh successful: ${it.data?.size} catalogs")
+                            _catalogs.value = Resource.Success(it)
+                        },
+                        onFailure = {
+                            Log.e("HomeViewModel", "Refresh failed: ${it.message}")
+                            // Keep existing data on refresh failure
+                            if (_catalogs.value !is Resource.Success) {
+                                _catalogs.value = Resource.Error(it.message ?: "An unknown error occurred")
+                            }
+                        }
+                    )
+                }
+            } catch (error: Exception) {
+                Log.e("HomeViewModel", "Refresh exception: ${error.message}")
+                // Keep existing data on refresh failure
+                if (_catalogs.value !is Resource.Success) {
+                    _catalogs.value = Resource.Error(error.message ?: "An unknown error occurred")
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         fetchJob?.cancel()
     }
 }
-

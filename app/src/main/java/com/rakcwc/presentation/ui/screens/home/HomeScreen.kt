@@ -6,12 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +28,7 @@ import com.rakcwc.presentation.ui.screens.home.components.CatalogCard
 import com.rakcwc.presentation.ui.screens.home.components.EmptyCatalogView
 import com.rakcwc.utils.shimmerEffect
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onScrollOffsetChanged: (Int) -> Unit = {},
@@ -37,6 +38,9 @@ fun HomeScreen(
 ) {
     val scrollState = rememberScrollState()
     val homeState by homeVm.catalogs.collectAsState()
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    var isRefreshing by remember { mutableStateOf(false) }
 
     // Get screen configuration for responsive design
     val configuration = LocalConfiguration.current
@@ -62,106 +66,124 @@ fun HomeScreen(
         else -> 20.dp
     }
 
+    // Handle pull-to-refresh
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            homeVm.refreshCatalogs()
+            // Wait a bit for the refresh to complete
+            kotlinx.coroutines.delay(500)
+            isRefreshing = false
+        }
+    }
+
     LaunchedEffect(scrollState.value) {
         onScrollOffsetChanged(scrollState.value)
     }
 
-    Column(
+    PullToRefreshBox(
+        state = pullToRefreshState,
+        isRefreshing = isRefreshing,
+        onRefresh = { isRefreshing = true },
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.White)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.Start
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
-        ) {
-            navigationTitle()
-        }
-
-        // Categories Section
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.Start
         ) {
-            Text(
-                modifier = Modifier.padding(bottom = 16.dp),
-                text = "Katalog",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding)
+            ) {
+                navigationTitle()
+            }
 
-            when (homeState) {
-                is Resource.Loading -> {
-                    // Show shimmer loading based on columns per row
-                    (1..8).chunked(columnsPerRow).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = cardSpacing),
-                            horizontalArrangement = Arrangement.spacedBy(cardSpacing)
-                        ) {
-                            rowItems.forEach { _ ->
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .shimmerEffect()
-                                )
-                            }
-                            // Fill remaining space if row is incomplete
-                            repeat(columnsPerRow - rowItems.size) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
+            // Categories Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding)
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    text = "Katalog",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-                is Resource.Success -> {
-                    val catalogs = homeState.data?.data ?: emptyList()
-
-                    if (catalogs.isNotEmpty()) {
-                        catalogs.chunked(columnsPerRow).forEach { catalogRow ->
+                when (homeState) {
+                    is Resource.Loading -> {
+                        // Show shimmer loading based on columns per row
+                        (1..8).chunked(columnsPerRow).forEach { rowItems ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = cardSpacing),
                                 horizontalArrangement = Arrangement.spacedBy(cardSpacing)
                             ) {
-                                catalogRow.forEach { item ->
-                                    CatalogCard(
-                                        modifier = Modifier.weight(1f),
-                                        data = item
-                                    ) {
-                                        navController?.navigate("catalog/${item.id}")
-                                    }
+                                rowItems.forEach { _ ->
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .shimmerEffect()
+                                    )
                                 }
-
                                 // Fill remaining space if row is incomplete
-                                repeat(columnsPerRow - catalogRow.size) {
+                                repeat(columnsPerRow - rowItems.size) {
                                     Spacer(modifier = Modifier.weight(1f))
                                 }
                             }
                         }
-                    } else {
-                        EmptyState()
                     }
-                }
 
-                is Resource.Error -> {
-                    ErrorState(
-                        errorMessage = "Oops! Something Went Wrong",
-                        errorDescription = homeState.message
-                            ?: "We couldn't load the data. Please check your connection and try again.",
-                        onRetryClick = {
-                            homeVm.getCatalogs()
+                    is Resource.Success -> {
+                        val catalogs = homeState.data?.data ?: emptyList()
+
+                        if (catalogs.isNotEmpty()) {
+                            catalogs.chunked(columnsPerRow).forEach { catalogRow ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = cardSpacing),
+                                    horizontalArrangement = Arrangement.spacedBy(cardSpacing)
+                                ) {
+                                    catalogRow.forEach { item ->
+                                        CatalogCard(
+                                            modifier = Modifier.weight(1f),
+                                            data = item
+                                        ) {
+                                            navController?.navigate("catalog/${item.id}")
+                                        }
+                                    }
+
+                                    // Fill remaining space if row is incomplete
+                                    repeat(columnsPerRow - catalogRow.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        } else {
+                            EmptyState()
                         }
-                    )
+                    }
+
+                    is Resource.Error -> {
+                        ErrorState(
+                            errorMessage = "Oops! Something Went Wrong",
+                            errorDescription = homeState.message
+                                ?: "We couldn't load the data. Please check your connection and try again.",
+                            onRetryClick = {
+                                homeVm.getCatalogs()
+                            }
+                        )
+                    }
                 }
             }
         }

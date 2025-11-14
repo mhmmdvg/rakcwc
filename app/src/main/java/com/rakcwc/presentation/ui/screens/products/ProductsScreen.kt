@@ -8,7 +8,10 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +27,7 @@ import com.rakcwc.presentation.ui.screens.products.components.EmptyProductView
 import com.rakcwc.presentation.ui.screens.products.components.ProductCard
 import com.rakcwc.utils.shimmerEffect
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductsScreen(
     onScrollOffsetChanged: (Int) -> Unit = {},
@@ -34,6 +38,9 @@ fun ProductsScreen(
 ) {
     val uiState by productVm.uiState.collectAsState()
     val lazyGridState = rememberLazyGridState()
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    var isRefreshing by remember { mutableStateOf(false) }
 
     val totalScrollOffset = remember {
         derivedStateOf {
@@ -44,6 +51,18 @@ fun ProductsScreen(
             } else {
                 0
             }
+        }
+    }
+
+    // Handle pull-to-refresh
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            catalogId?.let {
+                productVm.getCatalogDetail(it, forceRefresh = true)
+            }
+            // Reset refreshing state after a short delay
+            kotlinx.coroutines.delay(500)
+            isRefreshing = false
         }
     }
 
@@ -81,163 +100,166 @@ fun ProductsScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        LazyVerticalGrid(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 86.dp)
-                .padding(horizontal = 20.dp),
-            columns = GridCells.Fixed(2),
-            state = lazyGridState,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = isRefreshing,
+            onRefresh = { isRefreshing = true },
+            modifier = Modifier.fillMaxSize()
         ) {
-            when {
-                uiState.isLoading -> {
-                    // Initial loading state
-                    items(8) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .height(120.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .shimmerEffect()
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
+            LazyVerticalGrid(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 86.dp)
+                    .padding(horizontal = 20.dp),
+                columns = GridCells.Fixed(2),
+                state = lazyGridState,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        // Initial loading state
+                        items(8) {
                             Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize(),
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .width(80.dp)
-                                        .height(32.dp)
-                                        .padding(top = 8.dp)
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .fillMaxSize()
+                                        .height(120.dp)
+                                        .clip(RoundedCornerShape(16.dp))
                                         .shimmerEffect()
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .width(60.dp)
-                                        .height(24.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .shimmerEffect()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                uiState.products.isNotEmpty() -> {
-                    // Filter chips row
-                    if (uiState.filters.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(
-                                    items = uiState.filters,
-                                    key = { it.name }
-                                ) { filter ->
-                                    Log.d("ProductsScreen", "Filter $filter")
-                                    Log.d("ProductsScreen", "Selected ${uiState.selectedFilter}")
-                                    FilterChip(
-                                        label = "${filter.name}",
-                                        isSelected = uiState.selectedFilter == filter.name,
-                                        onClick = {
-                                            productVm.applyFilter(filter.name)
-                                        },
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(80.dp)
+                                            .height(32.dp)
+                                            .padding(top = 8.dp)
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .shimmerEffect()
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .height(24.dp)
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .shimmerEffect()
                                     )
                                 }
                             }
                         }
                     }
 
-                    // Products grid
-                    items(
-                        items = uiState.products,
-                        key = { it.id }
-                    ) { product ->
-                        ProductCard(
-                            data = product,
-                            onClick = { navController?.navigate("product/${product.id}") },
-                        )
-                    }
+                    uiState.products.isNotEmpty() -> {
+                        // Filter chips row
+                        if (uiState.filters.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(
+                                        items = uiState.filters,
+                                        key = { it.name }
+                                    ) { filter ->
+                                        Log.d("ProductsScreen", "Filter $filter")
+                                        Log.d("ProductsScreen", "Selected ${uiState.selectedFilter}")
+                                        FilterChip(
+                                            label = "${filter.name}",
+                                            isSelected = uiState.selectedFilter == filter.name,
+                                            onClick = {
+                                                productVm.applyFilter(filter.name)
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
-                    // Loading more indicator at bottom
-                    if (uiState.isLoadingMore) {
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
+                        // Products grid
+                        items(
+                            items = uiState.products,
+                            key = { it.id }
+                        ) { product ->
+                            ProductCard(
+                                data = product,
+                                onClick = { navController?.navigate("product/${product.id}") },
+                            )
+                        }
+
+                        // Loading more indicator at bottom
+                        if (uiState.isLoadingMore) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+
+                        // End of list indicator
+                        if (!uiState.hasNextPage && uiState.products.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No more products",
+                                        color = Color.Gray
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // End of list indicator
-                    if (!uiState.hasNextPage && uiState.products.isNotEmpty()) {
+                    uiState.products.isEmpty() && !uiState.isLoading -> {
+                        // Empty state
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
+                            EmptyState() {
+                                navController?.navigate("settings/product-management")
+                            }
+                        }
+                    }
+                }
+
+                // Error state
+                if (uiState.error != null && uiState.products.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        ErrorState(
+                            errorMessage = "Oops! Something Went Wrong",
+                            errorDescription = uiState.error
+                                ?: "We couldn't load the data. Please check your connection and try again.",
+                        ) {
+                            productVm.retry()
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "No more products",
-                                    color = Color.Gray
+                                    text = uiState.error ?: "Unknown error",
+                                    color = Color.Red
                                 )
                             }
-                        }
-                    }
-                }
-
-                uiState.products.isEmpty() && !uiState.isLoading -> {
-                    // Empty state
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState() {
-                            navController?.navigate("settings/product-management")
-                        }
-                    }
-                }
-            }
-
-            // Error state
-            if (uiState.error != null && uiState.products.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    ErrorState(
-                        errorMessage = "Oops! Something Went Wrong",
-                        errorDescription = uiState.error
-                            ?: "We couldn't load the data. Please check your connection and try again.",
-                    ) {
-                        productVm.retry()
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = uiState.error ?: "Unknown error",
-                                color = Color.Red
-                            )
-                            // Optional: Add retry button
-                            // Button(onClick = { productVm.retry() }) {
-                            //     Text("Retry")
-                            // }
                         }
                     }
                 }

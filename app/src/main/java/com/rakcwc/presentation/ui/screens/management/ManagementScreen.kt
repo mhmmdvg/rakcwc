@@ -187,7 +187,7 @@ fun ManagementScreen(
                                         subTitle = catalog.name,
                                         onClick = {
                                             // Navigate to catalog detail
-                                            navController?.navigate("catalog-detail/${catalog.id}")
+                                            navController?.navigate("catalog/${catalog.id}")
                                         },
                                         onEdit = {
                                             // Navigate to edit catalog
