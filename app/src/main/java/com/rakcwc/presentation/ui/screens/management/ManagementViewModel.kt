@@ -7,6 +7,7 @@ import com.rakcwc.data.remote.repositories.ProductsRepositoryImpl
 import com.rakcwc.data.remote.resources.Resource
 import com.rakcwc.domain.models.CatalogsResponse
 import com.rakcwc.domain.models.HTTPResponse
+import com.rakcwc.domain.models.Products
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -155,7 +156,33 @@ class ManagementViewModel @Inject constructor(
                     }
 
                     "product" in type -> {
-                        // Similar implementation for products
+                        productsRepository.deleteProduct(id).fold(
+                            onSuccess = { response ->
+                                // Update state by removing the deleted item
+                                val currentState = _managementState.value
+                                if (currentState is Resource.Success) {
+                                    val updatedList = currentState.data?.data?.filterNot {
+                                        (it as? Products)?.id == id
+                                    }
+
+                                    val updatedResponse = HTTPResponse(
+                                        data = updatedList,
+                                        message = currentState.data?.message ?: "Successfully delete catalog",
+                                        status = currentState.data?.status
+                                    )
+
+                                    // Update cache and state
+                                    val cacheKey = CacheKey(type)
+                                    memoryCache[cacheKey] = CachedPage(updatedResponse)
+                                    _managementState.value = Resource.Success(updatedResponse)
+                                }
+
+                                Result.success(response.data?.id ?: "")
+                            },
+                            onFailure = { error ->
+                                Result.failure(error)
+                            }
+                        )
                     }
 
                     else -> Result.failure<String>(Exception("Unknown management type: $type"))

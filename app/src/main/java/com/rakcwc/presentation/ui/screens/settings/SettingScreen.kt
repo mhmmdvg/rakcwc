@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.rakcwc.presentation.Screen
 import com.rakcwc.presentation.ui.screens.settings.components.ProfileSection
 import com.rakcwc.presentation.ui.screens.settings.components.SettingsMenuItem
 import com.rakcwc.presentation.ui.screens.settings.components.SettingsSectionHeader
@@ -72,7 +73,10 @@ fun SettingScreen(
         Column {
             SettingsMenuItem(
                 title = "Log out",
-                onClick = { settingVm.signOut() },
+                onClick = {
+                    settingVm.signOut()
+                    navController.navigate(Screen.Authentication.route)
+                },
                 showDivider = false
             )
         }

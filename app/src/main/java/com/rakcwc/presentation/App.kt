@@ -1,5 +1,6 @@
 package com.rakcwc.presentation
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import com.rakcwc.presentation.ui.components.BottomNavigation
 import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
 import com.rakcwc.presentation.ui.screens.createcatalog.CreateEditCatalogScreen
+import com.rakcwc.presentation.ui.screens.createproduct.CreateEditProductScreen
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
 import com.rakcwc.presentation.ui.screens.management.ManagementScreen
@@ -45,6 +47,7 @@ fun App(
     var productsScreenTitle by remember { mutableStateOf("") }
     var managementTitle by remember { mutableStateOf("") }
     var managementCatalogTitle by remember { mutableStateOf("") }
+    var managementProductTitle by remember { mutableStateOf("") }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
@@ -118,7 +121,16 @@ fun App(
                         onBackPressed = { navController.popBackStack() },
                         actions = {
                             IconButton(
-                                onClick = { navController.navigate(Screen.CreateCatalog.route) }
+                                onClick = {
+                                    when {
+                                        "Catalog" in managementTitle -> {
+                                            navController.navigate(Screen.CreateCatalog.route)
+                                        }
+                                        "Product" in managementTitle -> {
+                                            navController.navigate(Screen.CreateProduct.route)
+                                        }
+                                    }
+                                }
                             ) {
                                 Icon(
                                     imageVector = Lucide.Plus,
@@ -137,6 +149,14 @@ fun App(
                         title = managementCatalogTitle.ifEmpty { "Create Catalog" },
                         scrollOffset = 200,
                         onBackPressed = { navController.popBackStack() }
+                    )
+                }
+
+                Screen.CreateProduct.route, Screen.EditProduct.route -> {
+                    AppBar(
+                        title = managementProductTitle.ifEmpty { "Create Product" },
+                        scrollOffset = 200,
+                        onBackPressed = { navController.popBackStack() },
                     )
                 }
             }
@@ -351,6 +371,29 @@ fun App(
                         managementCatalogTitle = title
                     },
                     catalogId = id,
+                )
+            }
+
+            composable(
+                route = Screen.CreateProduct.route,
+            ) {
+                CreateEditProductScreen(
+                    navController = navController
+                )
+            }
+
+            composable(
+                route = Screen.EditProduct.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) {
+                val id = it.arguments?.getString("id") ?: ""
+
+                CreateEditProductScreen(
+                    navController = navController,
+                    screenTitle = { title ->
+                        managementProductTitle = title
+                    },
+                    productId = id,
                 )
             }
         }

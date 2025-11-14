@@ -289,6 +289,7 @@ class CreateEditCatalogViewModel @Inject constructor(
             imageUrl = _state.value.imageUrl
         )
 
+        Log.d("CreateEditVM", "Optimistic update applied for catalog $catalogId")
 
         _saveState.value = Resource.Loading()
 

@@ -34,3 +34,14 @@ data class Pagination(
     val hasPreviousPage: Boolean
 )
 
+@Serializable
+data class ProductRequest(
+    val name: String,
+    val variant: String,
+    val code: String,
+    val description: String?,
+    val catalogId: String,
+    val pricePerUnit: Double,
+    val price: Double,
+    val imageUrl: String,
+)

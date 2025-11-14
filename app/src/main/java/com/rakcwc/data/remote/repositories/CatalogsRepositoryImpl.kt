@@ -206,6 +206,13 @@ class CatalogsRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 val body = response.body() ?: throw Exception("Response body is null")
+
+                body.data?.let { updatedCatalog ->
+                    catalogDao.insertCatalog(updatedCatalog.toEntity().copy(
+                        cachedAt = System.currentTimeMillis()
+                    ))
+                }
+
                 body
             } else {
                 val errorMessage = when (response.code()) {
@@ -234,12 +241,15 @@ class CatalogsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteCatalog(id: String): Result<HTTPResponse<CatalogsResponse>> {
+        val deletedCatalog = catalogDao.getCatalogById(id).first()
+        catalogDao.deleteCatalogById(id)
+
         return runCatching {
             val response = catalogsApi.deleteCatalog(id)
 
             if (response.isSuccessful) {
                 val body = response.body() ?: throw Exception("Response body is null")
-                catalogDao.deleteCatalogById(id)
+                Log.d("CatalogsRepo", "Catalog deleted successfully")
                 body
             } else {
                 val errorMessage = when (response.code()) {
@@ -250,9 +260,14 @@ class CatalogsRepositoryImpl @Inject constructor(
                 }
                 throw Exception(errorMessage)
             }
-        }.onSuccess {
-            Log.d("CatalogsRepo", "Catalog updated successfully")
         }.onFailure { error ->
+            // Step 3: Rollback on failure
+            if (deletedCatalog != null) {
+                Log.e("CatalogsRepo", "Delete failed, restoring catalog", error)
+                catalogDao.insertCatalog(deletedCatalog)
+                // Products will be restored when user refreshes or navigates back
+            }
+
             when (error) {
                 is HttpException -> {
                     Log.e("CatalogsRepo", "HTTP Exception: ${error.code()} - ${error.message()}", error)

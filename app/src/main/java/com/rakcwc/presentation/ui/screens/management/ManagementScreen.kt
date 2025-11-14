@@ -1,5 +1,6 @@
 package com.rakcwc.presentation.ui.screens.management
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,9 +63,14 @@ fun ManagementScreen(
     }
 
     LaunchedEffect(Unit) {
-        if ("catalog" in route) {
-            managementVm.refreshData()
-        }
+       when {
+           "catalog" in route -> {
+               managementVm.refreshData()
+           }
+           "product" in route -> {
+               managementVm.refreshData()
+           }
+       }
     }
 
     // Delete Confirmation Dialog
@@ -87,10 +93,13 @@ fun ManagementScreen(
                 Button(
                     onClick = {
                         // TODO: Call delete API
-                        // managementVm.deleteCatalog(deleteItemId) or deleteProduct(deleteItemId)
-                        when(route) {
-                            "catalog" -> {
+                        when {
+                            "catalog" in route -> {
                                 managementVm.deleteManagement(deleteItemId, "catalog")
+                            }
+
+                            "product" in route -> {
+                                managementVm.deleteManagement(deleteItemId, "product")
                             }
                         }
                         showDeleteDialog = false
@@ -182,7 +191,14 @@ fun ManagementScreen(
                                         },
                                         onEdit = {
                                             // Navigate to edit catalog
-                                            navController?.navigate("edit_catalog/${catalog.id}")
+                                            when {
+                                                "catalog" in route -> {
+                                                    navController?.navigate("edit_catalog/${catalog.id}")
+                                                }
+                                                "product" in route -> {
+                                                    navController?.navigate("edit_product/${catalog.id}")
+                                                }
+                                            }
                                         },
                                         onDelete = {
                                             itemToDelete = catalog
@@ -212,7 +228,7 @@ fun ManagementScreen(
                                         },
                                         onEdit = {
                                             // Navigate to edit product
-                                            navController?.navigate("edit-product/${product.id}")
+                                            navController?.navigate("edit_product/${product.id}")
                                         },
                                         onDelete = {
                                             itemToDelete = product

@@ -87,7 +87,7 @@ fun ProductCard(
                 )
             }
             Text(
-                text = data.price.toString(),
+                text = "Rp ${String.format("%,.0f", data.price)}",
                 fontSize = 16.sp,
                 color = AccentColor,
                 fontWeight = FontWeight.Bold,
