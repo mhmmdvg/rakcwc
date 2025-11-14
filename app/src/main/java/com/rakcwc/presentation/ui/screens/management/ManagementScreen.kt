@@ -184,7 +184,7 @@ fun ManagementScreen(
                                     SwipeableProductsCardList(
                                         imageUrl = catalog.imageUrl ?: "",
                                         title = catalog.name ?: "",
-                                        subTitle = "${catalog.products?.size ?: 0} products",
+                                        subTitle = catalog.name,
                                         onClick = {
                                             // Navigate to catalog detail
                                             navController?.navigate("catalog-detail/${catalog.id}")
@@ -224,7 +224,7 @@ fun ManagementScreen(
                                         price = product.price,
                                         onClick = {
                                             // Navigate to product detail
-                                            navController?.navigate("product-detail/${product.id}")
+                                            navController?.navigate("product/${product.id}")
                                         },
                                         onEdit = {
                                             // Navigate to edit product

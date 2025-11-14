@@ -163,7 +163,7 @@ fun ProductsScreen(
                     ) { product ->
                         ProductCard(
                             data = product,
-                            onClick = { Log.d("ProductCard", "ProductCard: Clicked") }
+                            onClick = { navController?.navigate("product/${product.id}") },
                         )
                     }
 

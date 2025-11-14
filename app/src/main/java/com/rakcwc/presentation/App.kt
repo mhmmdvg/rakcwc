@@ -29,6 +29,7 @@ import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
 import com.rakcwc.presentation.ui.screens.createcatalog.CreateEditCatalogScreen
 import com.rakcwc.presentation.ui.screens.createproduct.CreateEditProductScreen
+import com.rakcwc.presentation.ui.screens.detailproduct.DetailProductScreen
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
 import com.rakcwc.presentation.ui.screens.management.ManagementScreen
@@ -55,7 +56,7 @@ fun App(
     val maxOffset = 200
 
     val shouldBottomNav = when (currentRoute) {
-        Screen.Authentication.route, Screen.CreateCatalog.route -> false
+        Screen.Authentication.route, Screen.CreateCatalog.route, Screen.DetailProduct.route -> false
         null -> false
         else -> !currentRoute.startsWith(Screen.Home.route + "/")
     }
@@ -297,6 +298,7 @@ fun App(
                     val productsViewModel: ProductsViewModel = hiltViewModel(parentEntry)
 
                     ProductsScreen(
+                        navController = navController,
                         onScrollOffsetChanged = { offset ->
                             scrollOffset = offset
                         },
@@ -336,6 +338,17 @@ fun App(
                     )
                 }
 
+            }
+
+            composable(
+                route = Screen.DetailProduct.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) {
+                val id = it.arguments?.getString("id") ?: ""
+                DetailProductScreen(
+                    navController = navController,
+
+                )
             }
 
             composable(
