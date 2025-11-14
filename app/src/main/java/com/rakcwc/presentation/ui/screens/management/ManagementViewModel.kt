@@ -1,11 +1,11 @@
 package com.rakcwc.presentation.ui.screens.management
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rakcwc.data.remote.repositories.CatalogsRepositoryImpl
 import com.rakcwc.data.remote.repositories.ProductsRepositoryImpl
 import com.rakcwc.data.remote.resources.Resource
+import com.rakcwc.domain.models.CatalogsResponse
 import com.rakcwc.domain.models.HTTPResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -24,6 +24,7 @@ class ManagementViewModel @Inject constructor(
 
     private val _managementState = MutableStateFlow<Resource<HTTPResponse<List<Any>>>>(Resource.Loading())
     val managementState: StateFlow<Resource<HTTPResponse<List<Any>>>> = _managementState.asStateFlow()
+
 
     private var fetchJob: Job? = null
     private var currentType: String? = null
@@ -116,6 +117,52 @@ class ManagementViewModel @Inject constructor(
     fun refreshData() {
         currentType?.let { type ->
             getManagementData(type, forceRefresh = true)
+        }
+    }
+
+    fun deleteManagement(id: String, type: String) {
+        viewModelScope.launch {
+            try {
+                when {
+                    "catalog" in type -> {
+                        catalogsRepository.deleteCatalog(id).fold(
+                            onSuccess = { response ->
+                                // Update state by removing the deleted item
+                                val currentState = _managementState.value
+                                if (currentState is Resource.Success) {
+                                    val updatedList = currentState.data?.data?.filterNot {
+                                        (it as? CatalogsResponse)?.id == id
+                                    }
+
+                                    val updatedResponse = HTTPResponse(
+                                        data = updatedList,
+                                        message = currentState.data?.message ?: "Successfully delete catalog",
+                                        status = currentState.data?.status
+                                    )
+
+                                    // Update cache and state
+                                    val cacheKey = CacheKey(type)
+                                    memoryCache[cacheKey] = CachedPage(updatedResponse)
+                                    _managementState.value = Resource.Success(updatedResponse)
+                                }
+
+                                Result.success(response.data?.id ?: "")
+                            },
+                            onFailure = { error ->
+                                Result.failure(error)
+                            }
+                        )
+                    }
+
+                    "product" in type -> {
+                        // Similar implementation for products
+                    }
+
+                    else -> Result.failure<String>(Exception("Unknown management type: $type"))
+                }
+            } catch (e: Exception) {
+                Result.failure<String>(e)
+            }
         }
     }
 }

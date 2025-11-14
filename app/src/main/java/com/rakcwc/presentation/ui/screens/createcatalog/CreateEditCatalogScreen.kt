@@ -1,7 +1,6 @@
 package com.rakcwc.presentation.ui.screens.createcatalog
 
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
@@ -17,7 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.composables.icons.lucide.Camera
 import com.composables.icons.lucide.CircleAlert
@@ -29,14 +28,25 @@ import com.rakcwc.presentation.ui.components.ImageCropDialog
 import com.rakcwc.presentation.ui.theme.AccentColor
 
 @Composable
-fun CreateCatalogScreen(
+fun CreateEditCatalogScreen(
     navController: NavController,
-    viewModel: CreateCatalogViewModel = hiltViewModel()
+    catalogId: String? = null,
+    screenTitle: (String) -> Unit = {},
+    viewModel: CreateEditCatalogViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val createState by viewModel.createState.collectAsState()
+    val saveState by viewModel.saveState.collectAsState()
     var showCropDialog by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val isEditMode = catalogId != null
+
+    // Load catalog data if in edit mode
+    LaunchedEffect(catalogId) {
+        if (catalogId != null) {
+            viewModel.loadCatalog(catalogId)
+            screenTitle("Edit Catalog")
+        }
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -47,8 +57,8 @@ fun CreateCatalogScreen(
         }
     }
 
-    LaunchedEffect(createState) {
-        if (createState is Resource.Success && createState.data != null) {
+    LaunchedEffect(saveState) {
+        if (saveState is Resource.Success && saveState.data != null) {
             navController.popBackStack()
         }
     }
@@ -68,6 +78,18 @@ fun CreateCatalogScreen(
         )
     }
 
+    // Show loading overlay when loading catalog in edit mode
+    if (state.isLoadingCatalog) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AccentColor)
+        }
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -102,7 +124,7 @@ fun CreateCatalogScreen(
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable(enabled = state.uploadState !is Resource.Loading && createState !is Resource.Loading) {
+                    .clickable(enabled = state.uploadState !is Resource.Loading && saveState !is Resource.Loading) {
                         imagePicker.launch("image/*")
                     },
                 contentAlignment = Alignment.Center
@@ -279,7 +301,7 @@ fun CreateCatalogScreen(
         }
 
         // General Error Message
-        if (createState is Resource.Error) {
+        if (saveState is Resource.Error) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -298,7 +320,7 @@ fun CreateCatalogScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = createState.message ?: "An error occurred",
+                    text = saveState.message ?: "An error occurred",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFFD32F2F)
                 )
@@ -307,9 +329,9 @@ fun CreateCatalogScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Create Button
+        // Save Button
         Button(
-            onClick = { viewModel.createCatalog() },
+            onClick = { viewModel.saveCatalog() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -318,9 +340,9 @@ fun CreateCatalogScreen(
                 disabledContainerColor = AccentColor.copy(alpha = 0.6f)
             ),
             shape = RoundedCornerShape(12.dp),
-            enabled = createState !is Resource.Loading && state.uploadState !is Resource.Loading
+            enabled = saveState !is Resource.Loading && state.uploadState !is Resource.Loading
         ) {
-            if (createState is Resource.Loading) {
+            if (saveState is Resource.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     color = Color.White,
@@ -328,7 +350,7 @@ fun CreateCatalogScreen(
                 )
             } else {
                 Text(
-                    text = "Create Catalog",
+                    text = if (isEditMode) "Update Catalog" else "Create Catalog",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

@@ -200,10 +200,109 @@ class CatalogsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateCatalog(id: String, request: CatalogRequest): Result<HTTPResponse<CatalogsResponse>> {
+        return runCatching {
+            val response = catalogsApi.updateCatalog(id, request)
+
+            if (response.isSuccessful) {
+                val body = response.body() ?: throw Exception("Response body is null")
+                body
+            } else {
+                val errorMessage = when (response.code()) {
+                    400 -> "Bad Request"
+                    401 -> "Unauthorized"
+                    500 -> "Server error"
+                    else -> "Unknown error: ${response.code()}"
+                }
+                throw Exception(errorMessage)
+            }
+        }.onSuccess {
+            Log.d("CatalogsRepo", "Catalog updated successfully")
+        }.onFailure { error ->
+            when (error) {
+                is HttpException -> {
+                    Log.e("CatalogsRepo", "HTTP Exception: ${error.code()} - ${error.message()}", error)
+                }
+                is IOException -> {
+                    Log.e("CatalogsRepo", "Network Error: ${error.message}", error)
+                }
+                else -> {
+                    Log.e("CatalogsRepo", "Unexpected Error: ${error.message}", error)
+                }
+            }
+        }
+    }
+
+    override suspend fun deleteCatalog(id: String): Result<HTTPResponse<CatalogsResponse>> {
+        return runCatching {
+            val response = catalogsApi.deleteCatalog(id)
+
+            if (response.isSuccessful) {
+                val body = response.body() ?: throw Exception("Response body is null")
+                catalogDao.deleteCatalogById(id)
+                body
+            } else {
+                val errorMessage = when (response.code()) {
+                    400 -> "Bad Request"
+                    401 -> "Unauthorized"
+                    500 -> "Server error"
+                    else -> "Unknown error: ${response.code()}"
+                }
+                throw Exception(errorMessage)
+            }
+        }.onSuccess {
+            Log.d("CatalogsRepo", "Catalog updated successfully")
+        }.onFailure { error ->
+            when (error) {
+                is HttpException -> {
+                    Log.e("CatalogsRepo", "HTTP Exception: ${error.code()} - ${error.message()}", error)
+                }
+                is IOException -> {
+                    Log.e("CatalogsRepo", "Network Error: ${error.message}", error)
+                }
+                else -> {
+                    Log.e("CatalogsRepo", "Unexpected Error: ${error.message}", error)
+                }
+            }
+        }
+    }
+
     suspend fun insertOptimisticCatalog(catalog: CatalogsResponse) {
-        catalogDao.insertCatalog(catalog.toEntity().copy(
-            cachedAt = System.currentTimeMillis()
-        ))
+        val existingCatalog = catalogDao.getCatalogById(catalog.id).first()
+
+        val catalogToInsert = if (existingCatalog != null) {
+            // Edit mode: preserve existing data
+            catalog.toEntity().copy(
+                cachedAt = System.currentTimeMillis()
+            )
+        } else {
+            // Create mode: new catalog
+            catalog.toEntity().copy(
+                cachedAt = System.currentTimeMillis()
+            )
+        }
+
+        catalogDao.insertCatalog(catalogToInsert)
+    }
+
+    suspend fun updateOptimisticCatalog(
+        catalogId: String,
+        name: String,
+        description: String,
+        imageUrl: String?
+    ) {
+        val existingCatalog = catalogDao.getCatalogById(catalogId).first()
+
+        if (existingCatalog != null) {
+            // Update only the changed fields, preserve everything else
+            val updatedCatalog = existingCatalog.copy(
+                name = name,
+                description = description,
+                imageUrl = imageUrl,
+                cachedAt = System.currentTimeMillis()
+            )
+            catalogDao.insertCatalog(updatedCatalog)
+        }
     }
 
     suspend fun removeOptimisticCatalog(catalogId: String) {

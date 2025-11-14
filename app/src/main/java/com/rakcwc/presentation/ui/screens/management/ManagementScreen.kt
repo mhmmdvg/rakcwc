@@ -1,6 +1,5 @@
 package com.rakcwc.presentation.ui.screens.management
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,15 +9,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Package
 import com.composables.icons.lucide.ShoppingBag
@@ -27,12 +35,13 @@ import com.rakcwc.domain.models.CatalogsResponse
 import com.rakcwc.domain.models.Products
 import com.rakcwc.presentation.ui.components.EmptyState
 import com.rakcwc.presentation.ui.components.ErrorState
-import com.rakcwc.presentation.ui.screens.management.components.ProductsCardList
 import com.rakcwc.presentation.ui.screens.management.components.ProductsCardListSkeleton
+import com.rakcwc.presentation.ui.screens.management.components.SwipeableProductsCardList
 
 @Composable
 fun ManagementScreen(
     route: String = "catalog-management",
+    navController: NavController? = null,
     navigationTitle: (String) -> Unit = {},
     managementVm: ManagementViewModel = hiltViewModel()
 ) {
@@ -41,6 +50,11 @@ fun ManagementScreen(
         .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
 
     val managementState by managementVm.managementState.collectAsState()
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<Any?>(null) }
+    var deleteItemId by remember { mutableStateOf("") }
+    var deleteItemName by remember { mutableStateOf("") }
 
     LaunchedEffect(route) {
         navigationTitle(title)
@@ -53,7 +67,49 @@ fun ManagementScreen(
         }
     }
 
-    Log.d("ManagementScreen", "ManagementScreen: ${managementState.data}")
+    // Delete Confirmation Dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(
+                    text = "Delete ${if ("catalog" in route) "Catalog" else "Product"}?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"$deleteItemName\"? This action cannot be undone.",
+                    color = Color.Gray
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // TODO: Call delete API
+                        // managementVm.deleteCatalog(deleteItemId) or deleteProduct(deleteItemId)
+                        when(route) {
+                            "catalog" -> {
+                                managementVm.deleteManagement(deleteItemId, "catalog")
+                            }
+                        }
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE53935)
+                    )
+                ) {
+                    Text("Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -85,7 +141,6 @@ fun ManagementScreen(
                 val managementData = managementState.data?.data ?: emptyList()
 
                 if (managementData.isEmpty()) {
-                    // Empty State
                     EmptyState(
                         icon = if ("catalog" in route) Lucide.Package else Lucide.ShoppingBag,
                         title = if ("catalog" in route) "No Catalogs Yet" else "No Products Yet",
@@ -117,10 +172,24 @@ fun ManagementScreen(
                                     items = catalogs,
                                     key = { it.id }
                                 ) { catalog ->
-                                    ProductsCardList(
+                                    SwipeableProductsCardList(
                                         imageUrl = catalog.imageUrl ?: "",
-                                        title = catalog.name,
-                                        subTitle = catalog.name
+                                        title = catalog.name ?: "",
+                                        subTitle = "${catalog.products?.size ?: 0} products",
+                                        onClick = {
+                                            // Navigate to catalog detail
+                                            navController?.navigate("catalog-detail/${catalog.id}")
+                                        },
+                                        onEdit = {
+                                            // Navigate to edit catalog
+                                            navController?.navigate("edit_catalog/${catalog.id}")
+                                        },
+                                        onDelete = {
+                                            itemToDelete = catalog
+                                            deleteItemId = catalog.id
+                                            deleteItemName = catalog.name ?: ""
+                                            showDeleteDialog = true
+                                        }
                                     )
                                 }
                             }
@@ -132,11 +201,25 @@ fun ManagementScreen(
                                     items = products,
                                     key = { it.id }
                                 ) { product ->
-                                    ProductsCardList(
+                                    SwipeableProductsCardList(
                                         imageUrl = product.imageUrl ?: "",
-                                        title = product.name,
-                                        subTitle = product.code,
-                                        price = product.price
+                                        title = product.name ?: "",
+                                        subTitle = product.code ?: "",
+                                        price = product.price,
+                                        onClick = {
+                                            // Navigate to product detail
+                                            navController?.navigate("product-detail/${product.id}")
+                                        },
+                                        onEdit = {
+                                            // Navigate to edit product
+                                            navController?.navigate("edit-product/${product.id}")
+                                        },
+                                        onDelete = {
+                                            itemToDelete = product
+                                            deleteItemId = product.id
+                                            deleteItemName = product.name ?: ""
+                                            showDeleteDialog = true
+                                        }
                                     )
                                 }
                             }
@@ -146,7 +229,6 @@ fun ManagementScreen(
             }
 
             is Resource.Error -> {
-                // Error State
                 ErrorState(
                     errorMessage = "Oops! Something Went Wrong",
                     errorDescription = managementState.message
@@ -158,10 +240,4 @@ fun ManagementScreen(
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewManagementScreen() {
-    ManagementScreen()
 }

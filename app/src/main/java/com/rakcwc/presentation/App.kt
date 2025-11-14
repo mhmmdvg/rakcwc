@@ -2,17 +2,12 @@ package com.rakcwc.presentation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -31,7 +26,7 @@ import com.rakcwc.presentation.ui.components.AppBar
 import com.rakcwc.presentation.ui.components.BottomNavigation
 import com.rakcwc.presentation.ui.components.NavigationTitle
 import com.rakcwc.presentation.ui.screens.authentication.AuthScreen
-import com.rakcwc.presentation.ui.screens.createcatalog.CreateCatalogScreen
+import com.rakcwc.presentation.ui.screens.createcatalog.CreateEditCatalogScreen
 import com.rakcwc.presentation.ui.screens.home.HomeScreen
 import com.rakcwc.presentation.ui.screens.home.HomeViewModel
 import com.rakcwc.presentation.ui.screens.management.ManagementScreen
@@ -49,6 +44,7 @@ fun App(
     var scrollOffset by remember { mutableIntStateOf(0) }
     var productsScreenTitle by remember { mutableStateOf("") }
     var managementTitle by remember { mutableStateOf("") }
+    var managementCatalogTitle by remember { mutableStateOf("") }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
 
@@ -136,9 +132,9 @@ fun App(
                     )
                 }
 
-                Screen.CreateCatalog.route -> {
+                Screen.CreateCatalog.route, Screen.EditCatalog.route -> {
                     AppBar(
-                        title = "Create Catalog",
+                        title = managementCatalogTitle.ifEmpty { "Create Catalog" },
                         scrollOffset = 200,
                         onBackPressed = { navController.popBackStack() }
                     )
@@ -331,15 +327,30 @@ fun App(
                     route = management,
                     navigationTitle = {
                         managementTitle = it
-                    }
+                    },
+                    navController = navController,
                 )
             }
 
             composable(
                 route = Screen.CreateCatalog.route
             ) {
-                CreateCatalogScreen(
+                CreateEditCatalogScreen(
                     navController = navController,
+                )
+            }
+
+            composable(
+                route = Screen.EditCatalog.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) {
+                val id = it.arguments?.getString("id") ?: ""
+                CreateEditCatalogScreen(
+                    navController = navController,
+                    screenTitle = { title ->
+                        managementCatalogTitle = title
+                    },
+                    catalogId = id,
                 )
             }
         }

@@ -5,7 +5,9 @@ import com.rakcwc.domain.models.CatalogsResponse
 import com.rakcwc.domain.models.HTTPResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -24,4 +26,10 @@ interface CatalogsApi {
 
     @POST("catalogs")
     suspend fun createCatalog(@Body request: CatalogRequest): Response<HTTPResponse<CatalogsResponse>>
+
+    @PATCH("catalogs/{id}")
+    suspend fun updateCatalog(@Path("id") id: String, @Body request: CatalogRequest): Response<HTTPResponse<CatalogsResponse>>
+
+    @DELETE("catalogs/{id}")
+    suspend fun deleteCatalog(@Path("id") id: String): Response<HTTPResponse<CatalogsResponse>>
 }

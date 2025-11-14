@@ -10,4 +10,6 @@ interface CatalogsRepository {
     fun getCatalogs(): Flow<Result<HTTPResponse<List<CatalogsResponse>>>>
     fun getCatalogDetail(id: String, filter: String? = null, page: Int = 1): Flow<Result<HTTPResponse<CatalogsResponse>>>
     suspend fun createCatalog(request: CatalogRequest): Result<HTTPResponse<CatalogsResponse>>
+    suspend fun updateCatalog(id: String, request: CatalogRequest): Result<HTTPResponse<CatalogsResponse>>
+    suspend fun deleteCatalog(id: String): Result<HTTPResponse<CatalogsResponse>>
 }
