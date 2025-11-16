@@ -1,6 +1,5 @@
 package com.rakcwc.presentation
 
-import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -61,26 +60,24 @@ fun App(
         else -> !currentRoute.startsWith(Screen.Home.route + "/")
     }
 
-    val isAuthenticated = if (tokenManager.getToken().isNullOrEmpty()) false else true
-    val startDestination = if (isAuthenticated) Screen.BottomNav.route else Screen.Authentication.route
+    val isAuthenticated = !tokenManager.getToken().isNullOrEmpty()
+    val startDestination = Screen.BottomNav.route
 
-    LaunchedEffect(isAuthenticated) {
-        if (isAuthenticated && currentRoute == Screen.Authentication.route) {
-            navController.navigate(Screen.BottomNav.route) {
-                popUpTo(Screen.Authentication.route) { inclusive = true }
-            }
-        } else if (!isAuthenticated && currentRoute == Screen.BottomNav.route) {
-            navController.navigate(Screen.Authentication.route) {
-                popUpTo(0)
-            }
-        }
-    }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize(),
         topBar = {
             when (currentRoute) {
+                Screen.Authentication.route -> {
+                    AppBar(
+                        title = "Authentication",
+                        scrollOffset = 200,
+                        maxOffset = maxOffset,
+                        onBackPressed = { navController.popBackStack() }
+                    )
+                }
+
                 Screen.Home.route -> {
                     AppBar(
                         title = "Home",
@@ -127,6 +124,7 @@ fun App(
                                         "Catalog" in managementTitle -> {
                                             navController.navigate(Screen.CreateCatalog.route)
                                         }
+
                                         "Product" in managementTitle -> {
                                             navController.navigate(Screen.CreateProduct.route)
                                         }
@@ -328,6 +326,7 @@ fun App(
                                 maxOffset = maxOffset,
                             )
                         },
+                        navController = navController,
                         searchVm = searchViewModel
                     )
                 }
@@ -335,6 +334,7 @@ fun App(
                 composable("setting") {
                     SettingScreen(
                         navController = navController,
+                        isAuthenticated = isAuthenticated,
                     )
                 }
 
@@ -344,11 +344,7 @@ fun App(
                 route = Screen.DetailProduct.route,
                 arguments = listOf(navArgument("id") { type = NavType.StringType })
             ) {
-                val id = it.arguments?.getString("id") ?: ""
-                DetailProductScreen(
-                    navController = navController,
-
-                )
+                DetailProductScreen(navController = navController)
             }
 
             composable(
@@ -356,6 +352,13 @@ fun App(
                 arguments = listOf(navArgument("management") { type = NavType.StringType })
             ) {
                 val management = it.arguments?.getString("management") ?: ""
+
+                if (!isAuthenticated) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Authentication.route)
+                    }
+                }
+
                 ManagementScreen(
                     route = management,
                     navigationTitle = {
@@ -368,6 +371,13 @@ fun App(
             composable(
                 route = Screen.CreateCatalog.route
             ) {
+
+                if (!isAuthenticated) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Authentication.route)
+                    }
+                }
+
                 CreateEditCatalogScreen(
                     navController = navController,
                 )
@@ -377,6 +387,13 @@ fun App(
                 route = Screen.EditCatalog.route,
                 arguments = listOf(navArgument("id") { type = NavType.StringType })
             ) {
+
+                if (!isAuthenticated) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Authentication.route)
+                    }
+                }
+
                 val id = it.arguments?.getString("id") ?: ""
                 CreateEditCatalogScreen(
                     navController = navController,
@@ -390,6 +407,12 @@ fun App(
             composable(
                 route = Screen.CreateProduct.route,
             ) {
+                if (!isAuthenticated) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Authentication.route)
+                    }
+                }
+
                 CreateEditProductScreen(
                     navController = navController
                 )
@@ -399,8 +422,14 @@ fun App(
                 route = Screen.EditProduct.route,
                 arguments = listOf(navArgument("id") { type = NavType.StringType })
             ) {
-                val id = it.arguments?.getString("id") ?: ""
 
+                if (!isAuthenticated) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Authentication.route)
+                    }
+                }
+
+                val id = it.arguments?.getString("id") ?: ""
                 CreateEditProductScreen(
                     navController = navController,
                     screenTitle = { title ->

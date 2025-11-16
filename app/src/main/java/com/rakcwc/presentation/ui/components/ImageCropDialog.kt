@@ -6,7 +6,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +37,7 @@ import com.rakcwc.utils.ImageCropper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 import kotlin.math.min
 
 @Composable
@@ -54,6 +55,9 @@ fun ImageCropDialog(
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
+
+    // Track the minimum scale needed to fill the crop area
+    var minScale by remember { mutableFloatStateOf(1f) }
 
     LaunchedEffect(imageUri) {
         withContext(Dispatchers.IO) {
@@ -79,7 +83,7 @@ fun ImageCropDialog(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Header with better contrast
+                // Header
                 Surface(
                     modifier = Modifier.fillMaxWidth()
                         .zIndex(1f),
@@ -93,7 +97,6 @@ fun ImageCropDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Close button with background
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier
@@ -118,7 +121,6 @@ fun ImageCropDialog(
                             fontWeight = FontWeight.Bold
                         )
 
-                        // Done button with accent color background
                         Button(
                             onClick = {
                                 scope.launch {
@@ -176,57 +178,73 @@ fun ImageCropDialog(
                     bitmap?.let { bmp ->
                         val imageBitmap = remember(bmp) { bmp.asImageBitmap() }
 
+                        // Calculate minimum scale when canvas size or bitmap changes
+                        LaunchedEffect(canvasSize, imageBitmap) {
+                            if (canvasSize.width > 0 && canvasSize.height > 0) {
+                                val canvasW = canvasSize.width.toFloat()
+                                val canvasH = canvasSize.height.toFloat()
+                                val cropSize = min(canvasW, canvasH)
+
+                                val imageW = imageBitmap.width.toFloat()
+                                val imageH = imageBitmap.height.toFloat()
+
+                                // Calculate scale to fit image in canvas
+                                val imageAspect = imageW / imageH
+                                val canvasAspect = canvasW / canvasH
+                                val baseFitScale = if (imageAspect > canvasAspect) {
+                                    canvasH / imageH
+                                } else {
+                                    canvasW / imageW
+                                }
+
+                                // Calculate minimum scale needed to fill the square crop area
+                                val scaledFitW = imageW * baseFitScale
+                                val scaledFitH = imageH * baseFitScale
+                                val minScaleForCrop = max(
+                                    cropSize / scaledFitW,
+                                    cropSize / scaledFitH
+                                )
+
+                                minScale = minScaleForCrop
+
+                                // Reset to minimum scale on first load
+                                if (scale == 1f) {
+                                    scale = minScale
+                                }
+                            }
+                        }
+
                         Canvas(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pointerInput(Unit) {
-                                    // Handle pinch-to-zoom
-                                    detectTransformGestures { _, pan, zoom, _ ->
-                                        scale = (scale * zoom).coerceIn(1f, 5f)
+                                    detectTransformGestures { centroid, pan, zoom, _ ->
+                                        // Update scale with minimum constraint
+                                        val newScale = (scale * zoom).coerceIn(minScale, 5f)
 
-                                        // Update offset with pan
-                                        offsetX += pan.x
-                                        offsetY += pan.y
+                                        // Calculate scale change for centroid adjustment
+                                        val scaleChange = newScale / scale
 
-                                        // Constrain offset based on current scale
+                                        // Adjust offset to zoom towards the centroid
                                         val canvasW = canvasSize.width.toFloat()
                                         val canvasH = canvasSize.height.toFloat()
-                                        val imageW = imageBitmap.width.toFloat()
-                                        val imageH = imageBitmap.height.toFloat()
-                                        val imageAspect = imageW / imageH
-                                        val canvasAspect = canvasW / canvasH
+                                        val centerX = canvasW / 2f
+                                        val centerY = canvasH / 2f
 
-                                        val scaleFactor = if (imageAspect > canvasAspect) {
-                                            canvasH / imageH
-                                        } else {
-                                            canvasW / imageW
-                                        }
+                                        // Calculate new offset accounting for zoom center
+                                        val dx = (centroid.x - centerX) * (1 - scaleChange)
+                                        val dy = (centroid.y - centerY) * (1 - scaleChange)
 
-                                        val scaledW = imageW * scaleFactor * scale
-                                        val scaledH = imageH * scaleFactor * scale
-
-                                        val maxOffsetX = (scaledW - canvasW).coerceAtLeast(0f) / 2f
-                                        val maxOffsetY = (scaledH - canvasH).coerceAtLeast(0f) / 2f
-
-                                        offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
-                                        offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
-                                    }
-                                }
-                                .pointerInput(Unit) {
-                                    // Handle drag (single finger)
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
-
-                                        offsetX += dragAmount.x
-                                        offsetY += dragAmount.y
+                                        scale = newScale
+                                        offsetX = (offsetX + pan.x + dx)
+                                        offsetY = (offsetY + pan.y + dy)
 
                                         // Constrain offset
-                                        val canvasW = canvasSize.width.toFloat()
-                                        val canvasH = canvasSize.height.toFloat()
                                         val imageW = imageBitmap.width.toFloat()
                                         val imageH = imageBitmap.height.toFloat()
                                         val imageAspect = imageW / imageH
                                         val canvasAspect = canvasW / canvasH
+                                        val cropSize = min(canvasW, canvasH)
 
                                         val scaleFactor = if (imageAspect > canvasAspect) {
                                             canvasH / imageH
@@ -237,8 +255,13 @@ fun ImageCropDialog(
                                         val scaledW = imageW * scaleFactor * scale
                                         val scaledH = imageH * scaleFactor * scale
 
-                                        val maxOffsetX = (scaledW - canvasW).coerceAtLeast(0f) / 2f
-                                        val maxOffsetY = (scaledH - canvasH).coerceAtLeast(0f) / 2f
+                                        // Calculate crop boundaries
+                                        val cropLeft = (canvasW - cropSize) / 2f
+                                        val cropTop = (canvasH - cropSize) / 2f
+
+                                        // Max offset ensures image edges don't go inside crop area
+                                        val maxOffsetX = max(0f, (scaledW - cropSize) / 2f)
+                                        val maxOffsetY = max(0f, (scaledH - cropSize) / 2f)
 
                                         offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
                                         offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
@@ -350,7 +373,7 @@ fun ImageCropDialog(
                     }
                 }
 
-                // Instructions at bottom with better contrast
+                // Instructions
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.Black.copy(alpha = 0.8f),

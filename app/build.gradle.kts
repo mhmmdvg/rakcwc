@@ -45,6 +45,8 @@ android {
 }
 
 dependencies {
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
+
     // Room
     implementation("androidx.room:room-runtime:2.7.0-alpha12")
     implementation("androidx.room:room-ktx:2.7.0-alpha12")

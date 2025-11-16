@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -19,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.rakcwc.presentation.ui.theme.AccentColor
 import com.rakcwc.utils.NavigationConfig
 import kotlinx.coroutines.launch
@@ -29,6 +32,18 @@ fun BottomNavigation(
 ) {
     val selectedNavigationIndex = rememberSaveable { mutableIntStateOf(0) }
     val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+
+    // Observe current route to sync selected index
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Update selected index based on current route
+    LaunchedEffect(currentRoute) {
+        val index = NavigationConfig.items.indexOfFirst { it.screen == currentRoute }
+        if (index != -1) {
+            selectedNavigationIndex.intValue = index
+        }
+    }
 
     NavigationBar(
         modifier = Modifier
@@ -55,8 +70,22 @@ fun BottomNavigation(
                 interactionSource = interactionSource,
                 selected = selectedNavigationIndex.intValue == index,
                 onClick = {
-                    selectedNavigationIndex.intValue = index
-                    navController.navigate(it.screen)
+                    // Only navigate if not already on this screen
+                    if (selectedNavigationIndex.intValue != index) {
+                        selectedNavigationIndex.intValue = index
+                        navController.navigate(it.screen) {
+                            // Pop up to the start destination of the graph to
+                            // avoid building up a large stack of destinations
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination when
+                            // reselecting the same item
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
+                    }
 
                     scope.launch {
                         scale.animateTo(

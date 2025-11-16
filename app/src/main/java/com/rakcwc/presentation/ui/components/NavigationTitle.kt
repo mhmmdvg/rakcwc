@@ -71,19 +71,19 @@ fun NavigationTitle(
                     letterSpacing = (-0.5).sp
                 )
 
-                CacheImage(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = {
-                                navController.navigate("profile")
-                            }
-                        ),
-                    imageUrl = "https://github.com/evilrabbit.png"
-                )
+//                CacheImage(
+//                    modifier = Modifier
+//                        .size(48.dp)
+//                        .clip(CircleShape)
+//                        .clickable(
+//                            interactionSource = interactionSource,
+//                            indication = null,
+//                            onClick = {
+//                                navController.navigate("profile")
+//                            }
+//                        ),
+//                    imageUrl = "https://github.com/evilrabbit.png"
+//                )
 
 //                when (currentMe) {
 //                    is Resource.Loading -> {

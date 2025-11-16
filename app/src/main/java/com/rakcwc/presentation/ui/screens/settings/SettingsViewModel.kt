@@ -22,7 +22,7 @@ class SettingsViewModel @Inject constructor(
     init {
         getProfile()
     }
-    private fun getProfile() {
+    fun getProfile() {
         _settings.value = tokenManager.getToken()?.let { JWTDecoder.decode(it) }
     }
 

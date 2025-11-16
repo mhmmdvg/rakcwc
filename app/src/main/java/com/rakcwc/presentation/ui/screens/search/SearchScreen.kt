@@ -23,8 +23,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.X
@@ -39,6 +42,7 @@ import com.rakcwc.utils.shimmerEffect
 fun SearchScreen(
     onScrollOffsetChanged: (Int) -> Unit = {},
     navigationTitle: @Composable () -> Unit = {},
+    navController: NavController? = null,
     searchVm: SearchViewModel = hiltViewModel()
 ) {
     val searchState by searchVm.products.collectAsState()
@@ -67,6 +71,13 @@ fun SearchScreen(
         screenWidth < 600.dp -> 12.dp
         screenWidth < 840.dp -> 16.dp
         else -> 20.dp
+    }
+
+    // Responsive placeholder text
+    val placeholderText = when {
+        screenWidth < 360.dp -> "Search products..."
+        screenWidth < 600.dp -> "Search by name or code..."
+        else -> "Search by name, code, or variant..."
     }
 
     val totalScrollOffset = remember {
@@ -104,12 +115,22 @@ fun SearchScreen(
             OutlinedTextField(
                 value = searchQuery.query,
                 onValueChange = { searchVm.onSearchQueryChanged(it) },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Search by name, code, or variant...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp), // Fixed height to prevent layout shifts
+                placeholder = {
+                    Text(
+                        text = placeholderText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 16.sp
+                    )
+                },
                 leadingIcon = {
                     Icon(
                         imageVector = Lucide.Search,
                         contentDescription = "Search",
+                        tint = Color.Gray
                     )
                 },
                 trailingIcon = {
@@ -128,6 +149,7 @@ fun SearchScreen(
                 textStyle = TextStyle(
                     color = Color.Black,
                     fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f),
@@ -139,6 +161,7 @@ fun SearchScreen(
                 ),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                singleLine = true, // Prevent multi-line input
             )
         }
 
@@ -191,7 +214,7 @@ fun SearchScreen(
                     ) {
                         ProductCard(
                             data = it,
-                            onClick = { Log.d("ProductCard", "ProductCard: Clicked") }
+                            onClick = { navController?.navigate("product/${it.id}") }
                         )
                     }
                 } else {
